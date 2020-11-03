@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  codecoach:
+    build:
+      context: ..
+      dockerfile: ./build/Dockerfile
+    environment:
+      HOST: :9001
+      DB_HOST: roach1
+      DB_PORT: 26257
+      DB_USER: root
+      DB_PASS: example
+      DB_NAME: codecoach
+      GITHUB_OAUTH_CLIENT_ID: xxx
+    ports:
+      - "9001:9001"
+    networks:
+      - codecoach-net
+
+  roach1:
+    image: cockroachdb/cockroach:latest-v20.1
+    hostname: roach1
+    command: start-single-node --insecure
+    restart: always
+    ports:
+      - "26257:26257"
+      - "8080:8080"
+    volumes:
+      - roach1-data:/cockroach/cockroach-data
+    networks:
+      - codecoach-net
+
+volumes:
+  roach1-data:
+
+networks:
+  codecoach-net:

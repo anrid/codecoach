@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  roach1:
+    image: cockroachdb/cockroach:latest-v20.1
+    hostname: roach1
+    command: start-single-node --insecure
+    restart: always
+    ports:
+      - "26257:26257"
+      - "8080:8080"
+    volumes:
+      - roach1-data:/cockroach/cockroach-data
+    networks:
+      - codecoach-net
+
+volumes:
+  roach1-data:
+
+networks:
+  codecoach-net:
