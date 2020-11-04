@@ -1,7 +1,11 @@
 package domain
 
 import (
+	"regexp"
+	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 // Account ...
@@ -16,8 +20,24 @@ type Account struct {
 	UpdatedAt *time.Time     `json:"updated_at" db:"updated_at"`
 }
 
+var (
+	alphanum = regexp.MustCompile(`[^a-zA-Z0-9\-_]+`)
+)
+
+// CreateCode creates a lowercase kebab case (aa-bb-cc) string.
+func CreateCode(s string) string {
+	code := alphanum.ReplaceAllString(strings.ToLower(s), "-")
+	return strings.Trim(code, "- ")
+}
+
 // NewAccount ...
-func NewAccount(name, code string) *Account {
+func NewAccount(name string) (*Account, error) {
+	// Create account code from account name.
+	code := CreateCode(name)
+	if len(code) < 2 {
+		return nil, errors.Errorf("could not a valid account code '%s' based on the account name '%s'", code, name)
+	}
+
 	u := &Account{
 		ID:        NewID(),
 		Name:      name,
@@ -25,7 +45,7 @@ func NewAccount(name, code string) *Account {
 		CreatedAt: time.Now(),
 	}
 
-	return u
+	return u, nil
 }
 
 // AddMember adds a new member to account, or updates a member

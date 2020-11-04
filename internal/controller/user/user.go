@@ -3,7 +3,6 @@ package user
 import (
 	"encoding/json"
 	"net/http"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -223,26 +222,11 @@ func (co *Controller) Signup(c echo.Context) (err error) {
 		return httpserver.NewError(http.StatusBadRequest, err, httpserver.GetValidatorError(err))
 	}
 
-	// Create account code from account name.
-	re := regexp.MustCompile(`[^a-zA-Z0-9\-_]+`)
-
-	code :=
-		strings.Trim(
-			strings.TrimSpace(
-				re.ReplaceAllString(
-					strings.ToLower(r.AccountName),
-					"-",
-				),
-			),
-			"-",
-		)
-
-	if len(code) < 2 {
-		return httpserver.NewError(http.StatusBadRequest, errors.Errorf("could not valid account code from name '%s'", r.AccountName), "invalid account name")
-	}
-
 	// Create new account.
-	a := domain.NewAccount(r.AccountName, code)
+	a, err := domain.NewAccount(r.AccountName)
+	if err != nil {
+		return httpserver.NewError(http.StatusBadRequest, err, "could not create account code")
+	}
 
 	// Create account admin.
 	u := domain.NewUser(a.ID, "admin", "admin", r.Email, r.Password, domain.AdminRole)
@@ -255,6 +239,7 @@ func (co *Controller) Signup(c echo.Context) (err error) {
 	})
 	a.OwnerID = u.ID
 
+	// Save account.
 	err = co.a.Create(a)
 	if err != nil {
 		return httpserver.NewError(http.StatusInternalServerError, err, "could not create account")
@@ -272,6 +257,7 @@ func (co *Controller) Signup(c echo.Context) (err error) {
 		return httpserver.NewError(http.StatusInternalServerError, err, "could not create user")
 	}
 
+	// Log successful signup.
 	zap.S().Infow(
 		"signup successful",
 		"account", a.ID,
@@ -311,16 +297,25 @@ func (co *Controller) Login(c echo.Context) (err error) {
 		return httpserver.NewError(http.StatusBadRequest, err, httpserver.GetValidatorError(err))
 	}
 
-	a, err := co.a.GetByCode(r.AccountCode)
+	// Get account by account code.
+	code := domain.CreateCode(r.AccountCode)
+	if len(code) < 2 {
+		return httpserver.NewError(http.StatusUnauthorized, errors.Errorf("invalid account code '%s'", code), "invalid account, email or password")
+	}
+
+	// Get account by account code.
+	a, err := co.a.GetByCode(code)
 	if err != nil {
 		return httpserver.NewError(http.StatusUnauthorized, err, "invalid account, email or password")
 	}
 
+	// Get user by email and account id.
 	u, err := co.u.GetByEmail(a.ID, r.Email)
 	if err != nil {
 		return httpserver.NewError(http.StatusUnauthorized, err, "invalid account, email or password")
 	}
 
+	// Verify password.
 	err = u.CheckPassword(r.Password)
 	if err != nil {
 		return httpserver.NewError(http.StatusUnauthorized, err, "invalid account, email or password")
@@ -332,6 +327,7 @@ func (co *Controller) Login(c echo.Context) (err error) {
 	// Make sure token expires at some point in the future.
 	tokenExpires := time.Now().Add(co.c.TokenExpires)
 
+	// Update user's token.
 	_, err = co.u.Update(u.AccountID, u.ID, []domain.Field{
 		{Name: "token", Value: token},
 		{Name: "token_expires_at", Value: tokenExpires},
@@ -340,6 +336,7 @@ func (co *Controller) Login(c echo.Context) (err error) {
 		return httpserver.NewError(http.StatusInternalServerError, err, "could not create token")
 	}
 
+	// Log successful login.
 	zap.S().Infow(
 		"login successful",
 		"account", u.AccountID,
