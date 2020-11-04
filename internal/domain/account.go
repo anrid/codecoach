@@ -21,12 +21,12 @@ type Account struct {
 }
 
 var (
-	alphanum = regexp.MustCompile(`[^a-zA-Z0-9\-_]+`)
+	notKebabCase = regexp.MustCompile(`[^a-z0-9\-]+`)
 )
 
-// CreateCode creates a lowercase kebab case (aa-bb-cc) string.
+// CreateCode creates a kebab-case string.
 func CreateCode(s string) string {
-	code := alphanum.ReplaceAllString(strings.ToLower(s), "-")
+	code := notKebabCase.ReplaceAllString(strings.ToLower(s), "-")
 	return strings.Trim(code, "- ")
 }
 
