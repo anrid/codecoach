@@ -32,14 +32,32 @@ func GetCodeExchangeURL(clientID, clientSecret, code, state string) string {
 }
 
 // ExchangeCode ...
-func ExchangeCode(url string) (ExchangeCodeResponse, error) {
-	r := ExchangeCodeResponse{}
+func ExchangeCode(url string) (*ExchangeCodeResponse, error) {
+	r := new(ExchangeCodeResponse)
 
 	_, err := httpclient.CallWithOptions(httpclient.Options{
 		Method:          http.MethodPost,
 		URL:             url,
-		ResponsePayload: &r,
+		ResponsePayload: r,
 		Accept:          "application/json",
+	})
+
+	return r, err
+}
+
+const githubAPIV3 = "https://api.github.com"
+const acceptGithubAPIJSON = "application/vnd.github.v3+json"
+
+// GetAuthenticatedUser ...
+func GetAuthenticatedUser(token string) (*UserProfile, error) {
+	r := new(UserProfile)
+
+	_, err := httpclient.CallWithOptions(httpclient.Options{
+		Method:          http.MethodGet,
+		URL:             githubAPIV3 + "/user",
+		ResponsePayload: r,
+		Accept:          acceptGithubAPIJSON,
+		Token:           token,
 	})
 
 	return r, err
@@ -50,24 +68,6 @@ type ExchangeCodeResponse struct {
 	AccessToken string `json:"access_token"`
 	Score       string `json:"scope"`
 	TokenType   string `json:"token_type"`
-}
-
-const githubAPIV3 = "https://api.github.com"
-const acceptGithubAPIJSON = "application/vnd.github.v3+json"
-
-// GetAuthenticatedUser ...
-func GetAuthenticatedUser(token string) (UserProfile, error) {
-	r := UserProfile{}
-
-	_, err := httpclient.CallWithOptions(httpclient.Options{
-		Method:          http.MethodGet,
-		URL:             githubAPIV3 + "/user",
-		ResponsePayload: &r,
-		Accept:          acceptGithubAPIJSON,
-		Token:           token,
-	})
-
-	return r, err
 }
 
 // UserProfile ...

@@ -4,11 +4,13 @@ import (
 	"os"
 
 	"github.com/anrid/codecoach/internal/config"
-	user_ctrl "github.com/anrid/codecoach/internal/controller/user"
+	oauth_c "github.com/anrid/codecoach/internal/controller/oauth"
+	user_c "github.com/anrid/codecoach/internal/controller/user"
 	"github.com/anrid/codecoach/internal/pg"
-	account_dao "github.com/anrid/codecoach/internal/pg/dao/account"
-	user_dao "github.com/anrid/codecoach/internal/pg/dao/user"
+	account_d "github.com/anrid/codecoach/internal/pg/dao/account"
+	user_d "github.com/anrid/codecoach/internal/pg/dao/user"
 	"github.com/anrid/codecoach/internal/pkg/httpserver"
+	github_oauth "github.com/anrid/codecoach/internal/usecase/github"
 	"github.com/spf13/pflag"
 	"go.uber.org/zap"
 )
@@ -41,17 +43,22 @@ func main() {
 	defer db.Close()
 
 	// Setup DAOs.
-	userDAO := user_dao.New(db)
-	accountDAO := account_dao.New(db)
+	userDAO := user_d.New(db)
+	accountDAO := account_d.New(db)
+
+	// Setup use cases.
+	oauthUC := github_oauth.New(c)
 
 	// Setup HTTP server.
 	serv := httpserver.New()
 
 	// Setup controllers.
-	userCtrl := user_ctrl.New(accountDAO, userDAO, c)
+	userCtrl := user_c.New(accountDAO, userDAO, c)
+	oauthCtrl := oauth_c.New(oauthUC)
 
 	// Setup routes.
 	userCtrl.SetupRoutes(serv)
+	oauthCtrl.SetupRoutes(serv)
 
 	// Start server.
 	serv.Start(c.Host)
