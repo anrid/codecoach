@@ -6,7 +6,9 @@
         "DB_USER": "root",
         "DB_PASS": "example",
         "DB_NAME": "userapi",
-        "GITHUB_OAUTH_CLIENT_ID": "xxx",
+        "GITHUB_CLIENT_ID": "xxx",
+        "GITHUB_CLIENT_SECRET": "xxx",
+        "GITHUB_REDIRECT_URI": "http://localhost:9001/api/v1/oauth/callback"
     },
     "go.testFlags": ["-count=1"]
 }

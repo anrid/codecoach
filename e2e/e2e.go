@@ -1,18 +1,13 @@
 package e2e
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"log"
-	"net/http"
 	"strings"
 	"time"
 
 	ctrl "github.com/anrid/codecoach/internal/controller/user"
 	"github.com/anrid/codecoach/internal/domain"
+	"github.com/anrid/codecoach/internal/pkg/httpclient"
 	"github.com/stretchr/testify/require"
 )
 
@@ -49,7 +44,7 @@ func AllTests(r *require.Assertions, o Options) {
 		}
 		res := ctrl.SignupResponse{}
 
-		call("POST", apiURL("/api/v1/signup"), &req, &res)
+		httpclient.Call("POST", apiURL("/api/v1/signup"), &req, &res)
 
 		r.NotEmpty(res.Account.ID)
 		r.NotEmpty(res.User.ID)
@@ -79,7 +74,7 @@ func AllTests(r *require.Assertions, o Options) {
 		}
 		res := domain.User{}
 
-		_call("POST", apiURL("/api/v1/accounts/%s/users", a1.ID), u1Token, &req, &res)
+		httpclient.CallWithToken("POST", apiURL("/api/v1/accounts/%s/users", a1.ID), u1Token, &req, &res)
 
 		r.NotEmpty(res.ID)
 		r.Nil(res.UpdatedAt)
@@ -99,7 +94,7 @@ func AllTests(r *require.Assertions, o Options) {
 		}
 		res := ctrl.LoginResponse{}
 
-		call("POST", apiURL("/api/v1/login"), &req, &res)
+		httpclient.Call("POST", apiURL("/api/v1/login"), &req, &res)
 
 		r.Equal(u2.ID, res.User.ID)
 		r.Equal(u2.Email, res.User.Email)
@@ -113,9 +108,9 @@ func AllTests(r *require.Assertions, o Options) {
 
 	// GET /secret
 	{
-		res := ctrl.SecretResponse{}
+		res := ctrl.GetSecretResponse{}
 
-		_call("GET", secretURL, u2Token, nil, &res)
+		httpclient.CallWithToken("GET", secretURL, u2Token, nil, &res)
 
 		r.Contains(res.Secret, "All your base")
 		r.Equal(u2.AccountID, res.AccountID)
@@ -126,7 +121,7 @@ func AllTests(r *require.Assertions, o Options) {
 	{
 		res := errorResp{}
 
-		_call("GET", secretURL, "", nil, &res)
+		httpclient.CallWithToken("GET", secretURL, "", nil, &res)
 
 		r.True(strings.Contains(res.Error, "token invalid") || strings.Contains(res.Error, "missing token"))
 	}
@@ -135,7 +130,7 @@ func AllTests(r *require.Assertions, o Options) {
 	{
 		res := errorResp{}
 
-		_call("GET", secretURL, "xxx", nil, &res)
+		httpclient.CallWithToken("GET", secretURL, "xxx", nil, &res)
 
 		r.Contains(res.Error, "token invalid")
 	}
@@ -149,7 +144,7 @@ func AllTests(r *require.Assertions, o Options) {
 		}
 		res := domain.User{}
 
-		_call("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u1.AccountID, u1.ID), u1Token, &req, &res)
+		httpclient.CallWithToken("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u1.AccountID, u1.ID), u1Token, &req, &res)
 
 		r.Equal(u1.ID, res.ID)
 		r.NotNil(res.UpdatedAt)
@@ -166,7 +161,7 @@ func AllTests(r *require.Assertions, o Options) {
 		}
 		res := ctrl.LoginResponse{}
 
-		call("POST", apiURL("/api/v1/login"), &req, &res)
+		httpclient.Call("POST", apiURL("/api/v1/login"), &req, &res)
 
 		r.NotEmpty(res.Token)
 		r.Equal(res.User.ID, u1.ID)
@@ -183,7 +178,7 @@ func AllTests(r *require.Assertions, o Options) {
 		}
 		res := domain.User{}
 
-		_call("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u2.AccountID, u2.ID), u2Token, &req, &res)
+		httpclient.CallWithToken("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u2.AccountID, u2.ID), u2Token, &req, &res)
 
 		r.Equal(u2.ID, res.ID)
 		r.NotNil(res.UpdatedAt)
@@ -198,7 +193,7 @@ func AllTests(r *require.Assertions, o Options) {
 		}
 		res := errorResp{}
 
-		_call("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u1.AccountID, u1.ID), u2Token, &req, &res)
+		httpclient.CallWithToken("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u1.AccountID, u1.ID), u2Token, &req, &res)
 
 		r.Contains(res.Error, "access denied")
 	}
@@ -211,7 +206,7 @@ func AllTests(r *require.Assertions, o Options) {
 			}
 			res := errorResp{}
 
-			_call("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u1.AccountID, u1.ID), u1Token, &req, &res)
+			httpclient.CallWithToken("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u1.AccountID, u1.ID), u1Token, &req, &res)
 
 			r.Contains(res.Error, "validation error: email")
 		}
@@ -223,7 +218,7 @@ func AllTests(r *require.Assertions, o Options) {
 			}
 			res := errorResp{}
 
-			_call("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u1.AccountID, u1.ID), u1Token, &req, &res)
+			httpclient.CallWithToken("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u1.AccountID, u1.ID), u1Token, &req, &res)
 
 			r.Contains(res.Error, "validation error: password")
 		}
@@ -235,64 +230,8 @@ func AllTests(r *require.Assertions, o Options) {
 
 		res := errorResp{}
 
-		_call("GET", secretURL, u1Token, nil, &res)
+		httpclient.CallWithToken("GET", secretURL, u1Token, nil, &res)
 
 		r.Equal("token expired", res.Error)
 	}
-}
-
-func call(method, url string, in, out interface{}) string {
-	return _call(method, url, "", in, out)
-}
-
-func _call(method, url, token string, in, out interface{}) string {
-	log.Printf("calling url: %s %s  --  token: %s", strings.ToUpper(method), url, token)
-
-	client := &http.Client{}
-
-	var payload io.Reader
-	if in != nil {
-		b, err := json.Marshal(in)
-		if err != nil {
-			panic(err)
-		}
-		log.Printf("payload: %s", string(b))
-		payload = bytes.NewReader(b)
-	}
-
-	req, err := http.NewRequest(method, url, payload)
-
-	// Always expect a JSON response.
-	req.Header.Add("Content-Type", "application/json")
-
-	if token != "" {
-		req.Header.Add("Authorization", "Bearer "+token)
-	}
-
-	res, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer res.Body.Close()
-
-	data, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	dataPreview := data
-	if len(data) > 1000 {
-		dataPreview = data[0:1000]
-	}
-
-	log.Printf("got response: %s\n", string(dataPreview))
-
-	err = json.Unmarshal(data, out)
-	if err != nil {
-		println("Error: " + err.Error())
-		println("Could not unmarshal response body:")
-		println(string(dataPreview))
-	}
-
-	return string(dataPreview)
 }

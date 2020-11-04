@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -97,4 +98,18 @@ type customValidator struct {
 
 func (cv *customValidator) Validate(i interface{}) error {
 	return cv.v.Struct(i)
+}
+
+// UnescapedJSON returns a JSON payload that doesn't escape HTML.
+// Go v1.7 added this:
+// encoding/json: add Encoder.DisableHTMLEscaping This provides
+// a way to disable the escaping of <, >, and & in JSON strings.
+func UnescapedJSON(c echo.Context, code int, payload interface{}) error {
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+	c.Response().WriteHeader(code)
+
+	enc := json.NewEncoder(c.Response())
+	enc.SetEscapeHTML(false)
+
+	return enc.Encode(payload)
 }

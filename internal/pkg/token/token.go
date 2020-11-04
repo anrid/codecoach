@@ -12,9 +12,9 @@ func New() string {
 	return randomBase64String(60)
 }
 
-// NewHex ...
-func NewHex() string {
-	return randomBase16String(60)
+// NewCode ...
+func NewCode(l int) string {
+	return randomBase16String(l)
 }
 
 func randomBase64String(l int) string {

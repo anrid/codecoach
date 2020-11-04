@@ -1,14 +1,18 @@
 package user
 
 import (
+	"encoding/json"
 	"net/http"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/anrid/codecoach/internal/config"
 	"github.com/anrid/codecoach/internal/domain"
+	"github.com/anrid/codecoach/internal/pkg/github"
 	"github.com/anrid/codecoach/internal/pkg/httpserver"
+	"github.com/anrid/codecoach/internal/pkg/token"
 	token_gen "github.com/anrid/codecoach/internal/pkg/token"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -17,14 +21,16 @@ import (
 
 // Controller ...
 type Controller struct {
-	a domain.AccountDAO
-	u domain.UserDAO
-	c *config.Config
+	a      domain.AccountDAO
+	u      domain.UserDAO
+	c      *config.Config
+	states map[string]bool
+	mux    *sync.Mutex
 }
 
 // New ...
 func New(a domain.AccountDAO, u domain.UserDAO, c *config.Config) *Controller {
-	return &Controller{a, u, c}
+	return &Controller{a, u, c, make(map[string]bool), new(sync.Mutex)}
 }
 
 // SetupRoutes ...
@@ -34,6 +40,97 @@ func (co *Controller) SetupRoutes(s *httpserver.HTTPServer) {
 	s.Echo.POST("/api/v1/accounts/:account_id/users", co.PostUser)
 	s.Echo.PATCH("/api/v1/accounts/:account_id/users/:id", co.PatchUser)
 	s.Echo.GET("/api/v1/accounts/:account_id/secret", co.GetSecret)
+	s.Echo.GET("/api/v1/oauth/url", co.GetOAuthURL)
+	s.Echo.GET("/api/v1/oauth/callback", co.GetOAuthCallback)
+}
+
+// GetOAuthURL ...
+func (co *Controller) GetOAuthURL(c echo.Context) error {
+	state := co.newState("login")
+
+	url := github.GetOAuthURL(co.c.GithubClientID, co.c.GithubRedirectURI, state.String())
+
+	return httpserver.UnescapedJSON(c, http.StatusOK, GetOAuthURLResponse{url})
+}
+
+// GetOAuthCallback ...
+func (co *Controller) GetOAuthCallback(c echo.Context) error {
+	code := c.QueryParam("code")
+	if code == "" {
+		return httpserver.NewError(http.StatusUnauthorized, errors.New("missing code"), "missing code")
+	}
+	stateStr := c.QueryParam("state")
+
+	_, err := co.checkState(stateStr)
+	if err != nil {
+		return httpserver.NewError(http.StatusUnauthorized, err, "missing or incorrect state")
+	}
+
+	url := github.GetCodeExchangeURL(co.c.GithubClientID, co.c.GithubClientSecret, code, stateStr)
+
+	r1, err := github.ExchangeCode(url)
+	if err != nil {
+		return httpserver.NewError(http.StatusUnauthorized, err, "could not exchange oauth code for access token")
+	}
+
+	userProfile, err := github.GetAuthenticatedUser(r1.AccessToken)
+	if err != nil {
+		return httpserver.NewError(http.StatusInternalServerError, err, "could not get user profile")
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"profile": userProfile,
+	})
+}
+
+func (co *Controller) newState(typ string) oauthState {
+	s := oauthState{
+		Type: typ,
+		Code: token.NewCode(16),
+	}
+
+	co.mux.Lock()
+	co.states[s.Code] = true
+	co.mux.Unlock()
+
+	return s
+}
+
+func (co *Controller) checkState(state string) (oauthState, error) {
+	s, err := fromString(state)
+	if err != nil {
+		return s, errors.Wrap(err, "incorrect state")
+	}
+
+	co.mux.Lock()
+	if _, found := co.states[s.Code]; !found {
+		return s, errors.New("missing state")
+	}
+	delete(co.states, s.Code)
+	co.mux.Unlock()
+
+	return s, nil
+}
+
+type oauthState struct {
+	Type string `json:"type"`
+	Code string `json:"code"`
+}
+
+func (s oauthState) String() string {
+	b, _ := json.Marshal(s)
+	return string(b)
+}
+
+func fromString(str string) (oauthState, error) {
+	s := oauthState{}
+	err := json.Unmarshal([]byte(str), &s)
+	return s, err
+}
+
+// GetOAuthURLResponse ...
+type GetOAuthURLResponse struct {
+	URL string `json:"url"`
 }
 
 // GetSecret ...
@@ -43,15 +140,15 @@ func (co *Controller) GetSecret(c echo.Context) error {
 		return httpserver.NewError(http.StatusUnauthorized, err, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, SecretResponse{
+	return c.JSON(http.StatusOK, GetSecretResponse{
 		AccountID: cu.AccountID,
 		ID:        cu.ID,
 		Secret:    "All your base are belong to us",
 	})
 }
 
-// SecretResponse ...
-type SecretResponse struct {
+// GetSecretResponse ...
+type GetSecretResponse struct {
 	AccountID domain.ID `json:"account_id"`
 	ID        domain.ID `json:"id"`
 	Secret    string    `json:"secret"`
