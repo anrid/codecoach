@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -24,7 +25,7 @@ func New(db *sqlx.DB) *DAO {
 }
 
 // Create ...
-func (d *DAO) Create(u *domain.User) error {
+func (d *DAO) Create(ctx context.Context, u *domain.User) error {
 	stmt, err := d.db.PrepareNamed(`
 	INSERT INTO users
 		(account_id, id, email, password_hash, token, token_expires_at, profile, role, created_at)
@@ -45,7 +46,7 @@ func (d *DAO) Create(u *domain.User) error {
 }
 
 // Get ...
-func (d *DAO) Get(accountID, id domain.ID) (*domain.User, error) {
+func (d *DAO) Get(ctx context.Context, accountID, id domain.ID) (*domain.User, error) {
 	u := new(domain.User)
 
 	err := d.db.Get(u, "SELECT * FROM users WHERE account_id = $1 AND id = $2", accountID, id)
@@ -57,7 +58,7 @@ func (d *DAO) Get(accountID, id domain.ID) (*domain.User, error) {
 }
 
 // GetByEmail ...
-func (d *DAO) GetByEmail(accountID domain.ID, email string) (*domain.User, error) {
+func (d *DAO) GetByEmail(ctx context.Context, accountID domain.ID, email string) (*domain.User, error) {
 	u := new(domain.User)
 
 	err := d.db.Get(u, "SELECT * FROM users WHERE account_id = $1 AND email = $2", accountID, email)
@@ -69,7 +70,7 @@ func (d *DAO) GetByEmail(accountID domain.ID, email string) (*domain.User, error
 }
 
 // GetByToken ...
-func (d *DAO) GetByToken(token string) (*domain.User, error) {
+func (d *DAO) GetByToken(ctx context.Context, token string) (*domain.User, error) {
 	u := new(domain.User)
 
 	err := d.db.Get(u, "SELECT * FROM users WHERE token = $1", token)
@@ -81,7 +82,7 @@ func (d *DAO) GetByToken(token string) (*domain.User, error) {
 }
 
 // Update ...
-func (d *DAO) Update(accountID, id domain.ID, updates []domain.Field) (*domain.User, error) {
+func (d *DAO) Update(ctx context.Context, accountID, id domain.ID, updates []domain.Field) (*domain.User, error) {
 	q := psql.Update("users").Where("account_id = ? AND id = ?", accountID, id)
 
 	for _, u := range updates {
@@ -99,7 +100,7 @@ func (d *DAO) Update(accountID, id domain.ID, updates []domain.Field) (*domain.U
 		return nil, errors.Wrapf(err, "could not update user %d - query: %s", id, q)
 	}
 
-	return d.Get(accountID, id)
+	return d.Get(ctx, accountID, id)
 }
 
 // CreateTable ...

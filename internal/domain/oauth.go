@@ -7,7 +7,7 @@ import (
 // OAuthUseCase ...
 type OAuthUseCase interface {
 	OAuthLoginURL() string
-	OAuthSignupURL(accountName string) string
+	OAuthSignupURL(accountName, givenName, familyName string) string
 	ExchangeCodeForUserProfile(code string, state OAuthState) (*ExternalUserProfile, error)
 }
 
@@ -32,6 +32,8 @@ type ExternalUserProfile struct {
 type OAuthState struct {
 	Type        string `json:"type"`
 	AccountName string `json:"account_name"`
+	GivenName   string `json:"given_name"`
+	FamilyName  string `json:"family_name"`
 	Code        string `json:"code"`
 }
 

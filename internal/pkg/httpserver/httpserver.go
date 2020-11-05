@@ -1,11 +1,14 @@
 package httpserver
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/anrid/codecoach/internal/domain"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -15,11 +18,12 @@ import (
 
 // HTTPServer ...
 type HTTPServer struct {
-	Echo *echo.Echo
+	Echo    *echo.Echo
+	Private *echo.Group
 }
 
 // New ...
-func New() *HTTPServer {
+func New(up UserProvider) *HTTPServer {
 	// Echo instance.
 	e := echo.New()
 
@@ -33,7 +37,9 @@ func New() *HTTPServer {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	return &HTTPServer{e}
+	g := e.Group("", NewAuthMiddleware(up))
+
+	return &HTTPServer{e, g}
 }
 
 // Start ...
@@ -112,4 +118,51 @@ func UnescapedJSON(c echo.Context, code int, payload interface{}) error {
 	enc.SetEscapeHTML(false)
 
 	return enc.Encode(payload)
+}
+
+// UserProvider ...
+type UserProvider interface {
+	GetByToken(ctx context.Context, token string) (*domain.User, error)
+}
+
+// NewAuthMiddleware creates a new instance of Echo middleware
+// that checks for the presence of a token in the Authorization
+// HTTP header (e.g. `Authorization: Bearer XXX`) and looks up
+// a user by the token.
+func NewAuthMiddleware(up UserProvider) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			ctx := c.Request().Context()
+
+			accountID := c.Param("account_id")
+			if accountID == "" || len(accountID) <= 10 {
+				return errors.New("account id missing or invalid")
+			}
+
+			auth := c.Request().Header.Get("authorization")
+			if auth == "" || !strings.HasPrefix(auth, "Bearer ") || len(auth) <= 10 {
+				return errors.New("token invalid")
+			}
+
+			token := auth[7:]
+
+			u, err := up.GetByToken(ctx, token)
+			if err != nil {
+				return errors.Wrap(err, "token invalid")
+			}
+
+			if domain.ID(accountID) != u.AccountID {
+				return errors.New("account invalid")
+			}
+
+			if u.TokenExpiresAt.Before(time.Now()) {
+				return errors.New("token expired")
+			}
+
+			// Replace current request object
+			c.SetRequest(c.Request().WithContext(domain.ContextWithSession(ctx, u)))
+
+			return next(c)
+		}
+	}
 }

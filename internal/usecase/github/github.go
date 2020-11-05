@@ -39,10 +39,12 @@ func (u *UseCase) OAuthLoginURL() string {
 }
 
 // OAuthSignupURL ...
-func (u *UseCase) OAuthSignupURL(accountName string) string {
+func (u *UseCase) OAuthSignupURL(accountName, givenName, familyName string) string {
 	state := domain.OAuthState{
 		Type:        "signup",
 		AccountName: accountName,
+		GivenName:   givenName,
+		FamilyName:  familyName,
 		Code:        token.NewCode(16),
 	}
 

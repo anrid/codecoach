@@ -11,6 +11,7 @@ import (
 	user_d "github.com/anrid/codecoach/internal/pg/dao/user"
 	"github.com/anrid/codecoach/internal/pkg/httpserver"
 	github_oauth "github.com/anrid/codecoach/internal/usecase/github"
+	user_uc "github.com/anrid/codecoach/internal/usecase/user"
 	"github.com/spf13/pflag"
 	"go.uber.org/zap"
 )
@@ -43,17 +44,18 @@ func main() {
 	defer db.Close()
 
 	// Setup DAOs.
-	userDAO := user_d.New(db)
 	accountDAO := account_d.New(db)
+	userDAO := user_d.New(db)
 
 	// Setup use cases.
 	oauthUC := github_oauth.New(c)
+	userUC := user_uc.New(c, accountDAO, userDAO)
 
 	// Setup HTTP server.
-	serv := httpserver.New()
+	serv := httpserver.New(userDAO)
 
 	// Setup controllers.
-	userCtrl := user_c.New(accountDAO, userDAO, c)
+	userCtrl := user_c.New(userUC)
 	oauthCtrl := oauth_c.New(oauthUC)
 
 	// Setup routes.

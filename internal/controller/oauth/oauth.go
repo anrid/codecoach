@@ -21,34 +21,36 @@ func New(oa domain.OAuthUseCase) *Controller {
 
 // SetupRoutes ...
 func (co *Controller) SetupRoutes(s *httpserver.HTTPServer) {
-	s.Echo.GET("/api/v1/oauth/url", co.GetOAuthURL)
+	s.Echo.GET("/api/v1/oauth/login-url", co.GetOAuthLoginURL)
+	s.Echo.POST("/api/v1/oauth/signup-url", co.PostOAuthSignupURL)
 	s.Echo.GET("/api/v1/oauth/callback", co.GetOAuthCallback)
 }
 
-// GetOAuthURL ...
-func (co *Controller) GetOAuthURL(c echo.Context) error {
-	typ := c.QueryParam("type")
-	if typ == "" {
-		// Default to login oauth url type.
-		typ = "login"
+// GetOAuthLoginURL ...
+func (co *Controller) GetOAuthLoginURL(c echo.Context) error {
+	return httpserver.UnescapedJSON(c, http.StatusOK, GetOAuthURLResponse{co.oa.OAuthLoginURL()})
+}
+
+// PostOAuthSignupURL ...
+func (co *Controller) PostOAuthSignupURL(c echo.Context) (err error) {
+	r := new(PostGetOAuthURLRequest)
+	if err = c.Bind(r); err != nil {
+		return
+	}
+	if err = c.Validate(r); err != nil {
+		return httpserver.NewError(http.StatusBadRequest, err, httpserver.GetValidatorError(err))
 	}
 
-	var url string
-
-	switch typ {
-	case "login":
-		url = co.oa.OAuthLoginURL()
-	case "signup":
-		accountName := c.QueryParam("account_name")
-		if len(accountName) < 2 {
-			return httpserver.NewError(http.StatusBadRequest, errors.Errorf("invalid account name '%s'", accountName), "invalid account name")
-		}
-		url = co.oa.OAuthSignupURL(accountName)
-	default:
-		return httpserver.NewError(http.StatusBadRequest, errors.Errorf("invalid oauth url type '%s'", typ), "invalid oauth url type, must be either 'login' or 'signup'")
-	}
+	url := co.oa.OAuthSignupURL(r.AccountName, r.GivenName, r.FamilyName)
 
 	return httpserver.UnescapedJSON(c, http.StatusOK, GetOAuthURLResponse{url})
+}
+
+// PostGetOAuthURLRequest ...
+type PostGetOAuthURLRequest struct {
+	AccountName string `json:"account_name" validate:"required,gte=2"`
+	GivenName   string `json:"given_name" validate:"required,gte=1"`
+	FamilyName  string `json:"family_name" validate:"required,gte=1"`
 }
 
 // GetOAuthCallback ...

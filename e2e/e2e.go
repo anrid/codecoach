@@ -39,6 +39,8 @@ func AllTests(r *require.Assertions, o Options) {
 	{
 		req := ctrl.SignupRequest{
 			AccountName: fmt.Sprintf("Massa Mun GAI! %d", now),
+			GivenName:   "Massa",
+			FamilyName:  "Mun",
 			Email:       fmt.Sprintf("admin-%d@example.com", now),
 			Password:    "massa123",
 		}
@@ -68,9 +70,11 @@ func AllTests(r *require.Assertions, o Options) {
 	var u2 *domain.User
 	{
 		req := ctrl.PostUserRequest{
-			Email:    fmt.Sprintf("hm-%d@example.com", now),
-			Password: "massa123",
-			Role:     domain.HiringManagerRole,
+			GivenName:  "Ace",
+			FamilyName: "Base",
+			Email:      fmt.Sprintf("hm-%d@example.com", now),
+			Password:   "massa123",
+			Role:       domain.HiringManagerRole,
 		}
 		res := domain.User{}
 
@@ -195,7 +199,7 @@ func AllTests(r *require.Assertions, o Options) {
 
 		httpclient.CallWithToken("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u1.AccountID, u1.ID), u2Token, &req, &res)
 
-		r.Contains(res.Error, "access denied")
+		r.Contains(res.Error, "could not update user")
 	}
 
 	{

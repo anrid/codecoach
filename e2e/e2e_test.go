@@ -11,6 +11,7 @@ import (
 	account_dao "github.com/anrid/codecoach/internal/pg/dao/account"
 	user_dao "github.com/anrid/codecoach/internal/pg/dao/user"
 	"github.com/anrid/codecoach/internal/pkg/httpserver"
+	user_uc "github.com/anrid/codecoach/internal/usecase/user"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
@@ -20,12 +21,11 @@ const testHost = "localhost:10099"
 
 type ts struct {
 	suite.Suite
-	db *sqlx.DB
-	ud *user_dao.DAO
-	ad *account_dao.DAO
-	uc *ctrl.Controller
-	s  *httpserver.HTTPServer
-	l  *zap.Logger
+	db     *sqlx.DB
+	aD     *account_dao.DAO
+	uD     *user_dao.DAO
+	serv   *httpserver.HTTPServer
+	logger *zap.Logger
 }
 
 func TestE2E(t *testing.T) {
@@ -34,8 +34,8 @@ func TestE2E(t *testing.T) {
 
 func (su *ts) SetupSuite() {
 	// Setup global zap logger.
-	su.l, _ = zap.NewDevelopment()
-	zap.ReplaceGlobals(su.l)
+	su.logger, _ = zap.NewDevelopment()
+	zap.ReplaceGlobals(su.logger)
 
 	zap.S().Infow("setup")
 
@@ -53,21 +53,24 @@ func (su *ts) SetupSuite() {
 	su.db = pg.InitDB(c.DBHost, c.DBPort, c.DBUser, c.DBPass, c.DBName)
 
 	// Setup DAOs.
-	su.ud = user_dao.New(su.db)
-	su.ad = account_dao.New(su.db)
+	su.aD = account_dao.New(su.db)
+	su.uD = user_dao.New(su.db)
+
+	// Setup use cases.
+	userUC := user_uc.New(c, su.aD, su.uD)
 
 	// Setup HTTP server.
-	su.s = httpserver.New()
+	su.serv = httpserver.New(su.uD)
 
 	// Setup controller.
-	su.uc = ctrl.New(su.ad, su.ud, c)
+	userCtrl := ctrl.New(userUC)
 
 	// Setup routes.
-	su.uc.SetupRoutes(su.s)
+	userCtrl.SetupRoutes(su.serv)
 
 	// Start server.
 	go func() {
-		su.s.Echo.Start(c.Host)
+		su.serv.Echo.Start(c.Host)
 	}()
 
 	zap.S().Infow("setup complete")
@@ -77,8 +80,8 @@ func (su *ts) TearDownSuite() {
 	zap.S().Infow("tear down")
 
 	su.db.Close()
-	su.s.Echo.Shutdown(context.Background())
-	su.l.Sync()
+	su.serv.Echo.Shutdown(context.Background())
+	su.logger.Sync()
 
 	zap.S().Infow("tear down complete")
 }
