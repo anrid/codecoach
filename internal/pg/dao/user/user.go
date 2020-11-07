@@ -28,9 +28,9 @@ func New(db *sqlx.DB) *DAO {
 func (d *DAO) Create(ctx context.Context, u *domain.User) error {
 	stmt, err := d.db.PrepareNamed(`
 	INSERT INTO users
-		(account_id, id, email, password_hash, token, token_expires_at, profile, role, created_at)
+		(account_id, id, github_id, email, password_hash, token, token_expires_at, profile, role, created_at)
 	VALUES
-		(:account_id, :id, :email, :password_hash, :token, :token_expires_at, :profile, :role, :created_at)
+		(:account_id, :id, :github_id, :email, :password_hash, :token, :token_expires_at, :profile, :role, :created_at)
 	RETURNING *
 	`)
 	if err != nil {
@@ -51,7 +51,7 @@ func (d *DAO) Get(ctx context.Context, accountID, id domain.ID) (*domain.User, e
 
 	err := d.db.Get(u, "SELECT * FROM users WHERE account_id = $1 AND id = $2", accountID, id)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not get user %d in account", id, accountID)
+		return nil, errors.Wrapf(err, "could not get user %s in account %s", id, accountID)
 	}
 
 	return u, nil
@@ -67,6 +67,30 @@ func (d *DAO) GetByEmail(ctx context.Context, accountID domain.ID, email string)
 	}
 
 	return u, nil
+}
+
+// GetByGithubID ...
+func (d *DAO) GetByGithubID(ctx context.Context, accountID domain.ID, githubID int64) (*domain.User, error) {
+	u := new(domain.User)
+
+	err := d.db.Get(u, "SELECT * FROM users WHERE account_id = $1 AND github_id = $2", accountID, githubID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not get user by github id %d in account %s", githubID, accountID)
+	}
+
+	return u, nil
+}
+
+// GetAllByGithubID ...
+func (d *DAO) GetAllByGithubID(ctx context.Context, githubID int64) ([]*domain.User, error) {
+	var us []*domain.User
+
+	err := d.db.Select(&us, "SELECT * FROM users WHERE github_id = $1", githubID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not get users with github id %d", githubID)
+	}
+
+	return us, nil
 }
 
 // GetByToken ...
@@ -97,7 +121,7 @@ func (d *DAO) Update(ctx context.Context, accountID, id domain.ID, updates []dom
 
 	_, err = d.db.Exec(sql, args...)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not update user %d - query: %s", id, q)
+		return nil, errors.Wrapf(err, "could not update user %s in account %s", id, accountID)
 	}
 
 	return d.Get(ctx, accountID, id)
@@ -109,6 +133,7 @@ func (d *DAO) CreateTable() int {
 	CREATE TABLE users (
 		account_id CHAR(20) NOT NULL,
 		id CHAR(20) NOT NULL,
+		github_id BIGINT,
 		email VARCHAR(255),
 		password_hash VARCHAR(60),
 		token CHAR(60) NOT NULL,
@@ -122,6 +147,7 @@ func (d *DAO) CreateTable() int {
 
 	d.db.MustExec(`CREATE UNIQUE INDEX ON users (account_id, email)`)
 	d.db.MustExec(`CREATE INDEX ON users (token)`)
+	d.db.MustExec(`CREATE INDEX ON users (github_id)`)
 
 	return 1
 }

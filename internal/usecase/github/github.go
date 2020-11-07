@@ -17,7 +17,7 @@ type UseCase struct {
 	mux    *sync.Mutex
 }
 
-var _ domain.OAuthUseCase = &UseCase{}
+var _ domain.OAuthUseCases = &UseCase{}
 
 // New ...
 func New(c *config.Config) *UseCase {
@@ -29,10 +29,11 @@ func New(c *config.Config) *UseCase {
 }
 
 // OAuthLoginURL ...
-func (u *UseCase) OAuthLoginURL() string {
+func (u *UseCase) OAuthLoginURL(accountCode string) string {
 	state := domain.OAuthState{
-		Type: "login",
-		Code: token.NewCode(16),
+		Type:        "login",
+		AccountCode: accountCode,
+		Code:        token.NewCode(16),
 	}
 
 	return github.GetOAuthURL(u.c.GithubClientID, u.c.GithubRedirectURI, state.String())
@@ -69,21 +70,4 @@ func (u *UseCase) ExchangeCodeForUserProfile(code string, state domain.OAuthStat
 	eup := domain.ExternalUserProfile(*up)
 
 	return &eup, nil
-}
-
-func (u *UseCase) setState(s domain.OAuthState) {
-	u.mux.Lock()
-	u.states[s.Code] = true
-	u.mux.Unlock()
-}
-
-func (u *UseCase) checkState(s domain.OAuthState) error {
-	u.mux.Lock()
-	if _, found := u.states[s.Code]; !found {
-		return errors.New("missing state")
-	}
-	delete(u.states, s.Code)
-	u.mux.Unlock()
-
-	return nil
 }

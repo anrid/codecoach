@@ -62,6 +62,18 @@ func getRoot(c echo.Context) error {
 	})
 }
 
+// BindAndValidate ...
+func BindAndValidate(c echo.Context, ptrToStruct interface{}) error {
+	if err := c.Bind(ptrToStruct); err != nil {
+		err = errors.Wrap(err, "request body is not valid JSON")
+		return NewError(http.StatusBadRequest, err, "request body is not valid JSON")
+	}
+	if err := c.Validate(ptrToStruct); err != nil {
+		return NewError(http.StatusBadRequest, err, GetValidatorError(err))
+	}
+	return nil
+}
+
 type stackTracer interface {
 	StackTrace() errors.StackTrace
 }
@@ -96,7 +108,7 @@ func customErrorHandler(err error, c echo.Context) {
 		message = he.Message
 	}
 
-	c.JSON(code, errorResponse{message})
+	_ = c.JSON(code, errorResponse{message})
 }
 
 // GetValidatorError ...

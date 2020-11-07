@@ -10,11 +10,11 @@ import (
 
 // Controller ...
 type Controller struct {
-	u domain.UserUseCase
+	u domain.UserUseCases
 }
 
 // New ...
-func New(u domain.UserUseCase) *Controller {
+func New(u domain.UserUseCases) *Controller {
 	return &Controller{u}
 }
 
@@ -51,11 +51,8 @@ type GetSecretResponse struct {
 // PostUser ...
 func (co *Controller) PostUser(c echo.Context) (err error) {
 	r := new(PostUserRequest)
-	if err = c.Bind(r); err != nil {
-		return
-	}
-	if err = c.Validate(r); err != nil {
-		return httpserver.NewError(http.StatusBadRequest, err, httpserver.GetValidatorError(err))
+	if err = httpserver.BindAndValidate(c, r); err != nil {
+		return err
 	}
 
 	u, err := co.u.Create(c.Request().Context(), domain.CreateUserArgs(*r))
@@ -78,15 +75,18 @@ type PostUserRequest struct {
 // Signup ...
 func (co *Controller) Signup(c echo.Context) (err error) {
 	r := new(SignupRequest)
-	if err = c.Bind(r); err != nil {
-		return
-	}
-	if err = c.Validate(r); err != nil {
-		return httpserver.NewError(http.StatusBadRequest, err, httpserver.GetValidatorError(err))
+	if err = httpserver.BindAndValidate(c, r); err != nil {
+		return err
 	}
 
 	// Perform signup.
-	res, err := co.u.Signup(c.Request().Context(), domain.SignupArgs(*r))
+	res, err := co.u.Signup(c.Request().Context(), domain.SignupArgs{
+		AccountName: r.AccountName,
+		GivenName:   r.GivenName,
+		FamilyName:  r.FamilyName,
+		Email:       r.Email,
+		Password:    r.Password,
+	})
 	if err != nil {
 		return httpserver.NewError(http.StatusInternalServerError, err, "could not perform signup")
 	}
@@ -113,11 +113,8 @@ type SignupResponse struct {
 // Login ...
 func (co *Controller) Login(c echo.Context) (err error) {
 	r := new(LoginRequest)
-	if err = c.Bind(r); err != nil {
-		return
-	}
-	if err = c.Validate(r); err != nil {
-		return httpserver.NewError(http.StatusBadRequest, err, httpserver.GetValidatorError(err))
+	if err = httpserver.BindAndValidate(c, r); err != nil {
+		return err
 	}
 
 	res, err := co.u.Login(c.Request().Context(), r.AccountCode, r.Email, r.Password)
@@ -148,11 +145,8 @@ func (co *Controller) PatchUser(c echo.Context) (err error) {
 	id := domain.ID(c.Param("id"))
 
 	r := new(PatchUserRequest)
-	if err = c.Bind(r); err != nil {
-		return
-	}
-	if err = c.Validate(r); err != nil {
-		return httpserver.NewError(http.StatusBadRequest, err, httpserver.GetValidatorError(err))
+	if err = httpserver.BindAndValidate(c, r); err != nil {
+		return err
 	}
 
 	u, err := co.u.Update(c.Request().Context(), accountID, id, domain.UpdateArgs(*r))

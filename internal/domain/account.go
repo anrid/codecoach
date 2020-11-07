@@ -92,5 +92,6 @@ type AccountDAO interface {
 	Create(u *Account) error
 	Get(id ID) (*Account, error)
 	GetByCode(code string) (*Account, error)
+	GetAll(ids []ID) ([]*Account, error)
 	Update(id ID, updates []Field) (*Account, error)
 }

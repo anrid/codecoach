@@ -10,5 +10,7 @@
         "GITHUB_CLIENT_SECRET": "xxx",
         "GITHUB_REDIRECT_URI": "http://localhost:9001/api/v1/oauth/callback"
     },
-    "go.testFlags": ["-count=1"]
+    "go.testFlags": ["-count=1"],
+    "go.lintOnSave": "workspace",
+    "go.lintTool": "golangci-lint"
 }

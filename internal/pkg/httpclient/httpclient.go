@@ -65,6 +65,9 @@ func CallWithOptions(o Options) ([]byte, error) {
 	}
 
 	req, err := http.NewRequest(o.Method, o.URL, payload)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create request")
+	}
 
 	if o.ContentType != "" {
 		req.Header.Add("Content-Type", o.ContentType)

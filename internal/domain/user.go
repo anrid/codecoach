@@ -11,6 +11,7 @@ import (
 type User struct {
 	AccountID      ID          `json:"account_id" db:"account_id"`
 	ID             ID          `json:"id" db:"id"`
+	GithubID       int64       `json:"github_id" db:"github_id"`
 	Email          string      `json:"email" db:"email"`
 	PasswordHash   []byte      `json:"-" db:"password_hash"`
 	Token          string      `json:"-" db:"token"`
@@ -55,9 +56,12 @@ func (u *User) CheckPassword(plaintextPassword string) error {
 
 // UserProfile ...
 type UserProfile struct {
-	GivenName  string `json:"given_name"`
-	FamilyName string `json:"family_name"`
-	Photo      string `json:"photo"`
+	GivenName   string `json:"given_name"`
+	FamilyName  string `json:"family_name"`
+	PhotoURL    string `json:"photo_url"`
+	GithubLogin string `json:"github_login"`
+	Location    string `json:"location"`
+	IsSuspended bool   `json:"is_suspended"`
 }
 
 // UserDAO ...
@@ -65,16 +69,19 @@ type UserDAO interface {
 	Create(ctx context.Context, u *User) error
 	Get(ctx context.Context, accountID, id ID) (*User, error)
 	GetByEmail(ctx context.Context, accountID ID, email string) (*User, error)
+	GetByGithubID(ctx context.Context, accountID ID, githubID int64) (*User, error)
+	GetAllByGithubID(ctx context.Context, githubID int64) ([]*User, error)
 	GetByToken(ctx context.Context, token string) (*User, error)
 	Update(ctx context.Context, accountID, id ID, updates []Field) (*User, error)
 }
 
-// UserUseCase ...
-type UserUseCase interface {
+// UserUseCases ...
+type UserUseCases interface {
 	Signup(ctx context.Context, a SignupArgs) (*SignupResult, error)
 	Login(ctx context.Context, accountCode, email, password string) (*LoginResult, error)
+	GithubLogin(ctx context.Context, accountCode string, githubID int64) (*LoginResult, error)
+	GithubGetAvailableAccounts(ctx context.Context, githubID int64) ([]*Account, error)
 	Create(ctx context.Context, a CreateUserArgs) (*User, error)
-	// Get(ctx context.Context, accountID, id ID) (*User, error)
 	Update(ctx context.Context, accountID, id ID, a UpdateArgs) (*User, error)
 }
 
@@ -85,6 +92,10 @@ type SignupArgs struct {
 	FamilyName  string
 	Email       string
 	Password    string
+	GithubID    int64
+	GithubLogin string
+	PhotoURL    string
+	Location    string
 }
 
 // SignupResult ...

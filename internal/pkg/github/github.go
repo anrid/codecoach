@@ -73,7 +73,7 @@ type ExchangeCodeResponse struct {
 // UserProfile ...
 type UserProfile struct {
 	Login     string `json:"login"`
-	ID        int    `json:"id"`
+	ID        int64  `json:"id"`
 	AvatarURL string `json:"avatar_url"`
 	URL       string `json:"url"`
 	HTMLURL   string `json:"html_url"`

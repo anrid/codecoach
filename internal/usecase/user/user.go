@@ -18,7 +18,7 @@ type UseCase struct {
 	u domain.UserDAO
 }
 
-var _ domain.UserUseCase = &UseCase{}
+var _ domain.UserUseCases = &UseCase{}
 
 // New ...
 func New(c *config.Config, a domain.AccountDAO, u domain.UserDAO) *UseCase {
@@ -35,6 +35,12 @@ func (uc *UseCase) Signup(ctx context.Context, sa domain.SignupArgs) (*domain.Si
 
 	// Create account admin.
 	u := domain.NewUser(a.ID, sa.GivenName, sa.FamilyName, sa.Email, sa.Password, domain.AdminRole)
+
+	// Add additional fields (if available).
+	u.GithubID = sa.GithubID
+	u.Profile.GithubLogin = sa.GithubLogin
+	u.Profile.PhotoURL = sa.PhotoURL
+	u.Profile.Location = sa.Location
 
 	// Add admin to account.
 	a.AddMember(domain.Member{
@@ -133,6 +139,80 @@ func (uc *UseCase) Login(ctx context.Context, accountCode, email, password strin
 		User:    u,
 		Token:   token,
 	}, nil
+}
+
+// GithubLogin ...
+func (uc *UseCase) GithubLogin(ctx context.Context, accountCode string, githubID int64) (*domain.LoginResult, error) {
+	// Get account by account code.
+	accountCode = domain.CreateCode(accountCode)
+	if len(accountCode) < 2 {
+		return nil, errors.Errorf("invalid account code '%s'", accountCode)
+	}
+
+	// Get account by account code.
+	a, err := uc.a.GetByCode(accountCode)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid account or github id")
+	}
+
+	// Get user by Github ID and account id.
+	u, err := uc.u.GetByGithubID(ctx, a.ID, githubID)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid account or github id")
+	}
+
+	// Generate access token.
+	token := token_gen.New()
+
+	// Make sure token expires at some point in the future.
+	tokenExpires := time.Now().Add(uc.c.TokenExpires)
+
+	// Update user's token.
+	_, err = uc.u.Update(ctx, u.AccountID, u.ID, []domain.Field{
+		{Name: "token", Value: token},
+		{Name: "token_expires_at", Value: tokenExpires},
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "could not update user's token")
+	}
+
+	// Log successful login.
+	zap.S().Infow(
+		"github oauth login successful",
+		"account", u.AccountID,
+		"user", u.ID,
+		"email", u.Email,
+		"token_expires", tokenExpires.String(),
+	)
+
+	return &domain.LoginResult{
+		Account: a,
+		User:    u,
+		Token:   token,
+	}, nil
+}
+
+// GithubGetAvailableAccounts returns all available accounts
+// for an authenticated Github user.
+func (uc *UseCase) GithubGetAvailableAccounts(ctx context.Context, githubID int64) ([]*domain.Account, error) {
+	// Get all users with the same Github ID.
+	us, err := uc.u.GetAllByGithubID(ctx, githubID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not get user with github id %d", githubID)
+	}
+
+	var accountIDs []domain.ID
+	for _, u := range us {
+		accountIDs = append(accountIDs, u.AccountID)
+	}
+
+	// Get all available accounts for user.
+	as, err := uc.a.GetAll(accountIDs)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not get accounts %v", accountIDs)
+	}
+
+	return as, nil
 }
 
 // Create ...

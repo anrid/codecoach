@@ -46,7 +46,7 @@ func AllTests(r *require.Assertions, o Options) {
 		}
 		res := ctrl.SignupResponse{}
 
-		httpclient.Call("POST", apiURL("/api/v1/signup"), &req, &res)
+		_, _ = httpclient.Call("POST", apiURL("/api/v1/signup"), &req, &res)
 
 		r.NotEmpty(res.Account.ID)
 		r.NotEmpty(res.User.ID)
@@ -62,10 +62,6 @@ func AllTests(r *require.Assertions, o Options) {
 		u1Token = res.Token
 	}
 
-	// domain.Dump(a1)
-	// domain.Dump(u1)
-	// domain.Dump(u1Token)
-
 	// POST /users
 	var u2 *domain.User
 	{
@@ -78,7 +74,7 @@ func AllTests(r *require.Assertions, o Options) {
 		}
 		res := domain.User{}
 
-		httpclient.CallWithToken("POST", apiURL("/api/v1/accounts/%s/users", a1.ID), u1Token, &req, &res)
+		_, _ = httpclient.CallWithToken("POST", apiURL("/api/v1/accounts/%s/users", a1.ID), u1Token, &req, &res)
 
 		r.NotEmpty(res.ID)
 		r.Nil(res.UpdatedAt)
@@ -98,7 +94,7 @@ func AllTests(r *require.Assertions, o Options) {
 		}
 		res := ctrl.LoginResponse{}
 
-		httpclient.Call("POST", apiURL("/api/v1/login"), &req, &res)
+		_, _ = httpclient.Call("POST", apiURL("/api/v1/login"), &req, &res)
 
 		r.Equal(u2.ID, res.User.ID)
 		r.Equal(u2.Email, res.User.Email)
@@ -114,7 +110,7 @@ func AllTests(r *require.Assertions, o Options) {
 	{
 		res := ctrl.GetSecretResponse{}
 
-		httpclient.CallWithToken("GET", secretURL, u2Token, nil, &res)
+		_, _ = httpclient.CallWithToken("GET", secretURL, u2Token, nil, &res)
 
 		r.Contains(res.Secret, "All your base")
 		r.Equal(u2.AccountID, res.AccountID)
@@ -125,7 +121,7 @@ func AllTests(r *require.Assertions, o Options) {
 	{
 		res := errorResp{}
 
-		httpclient.CallWithToken("GET", secretURL, "", nil, &res)
+		_, _ = httpclient.CallWithToken("GET", secretURL, "", nil, &res)
 
 		r.True(strings.Contains(res.Error, "token invalid") || strings.Contains(res.Error, "missing token"))
 	}
@@ -134,7 +130,7 @@ func AllTests(r *require.Assertions, o Options) {
 	{
 		res := errorResp{}
 
-		httpclient.CallWithToken("GET", secretURL, "xxx", nil, &res)
+		_, _ = httpclient.CallWithToken("GET", secretURL, "xxx", nil, &res)
 
 		r.Contains(res.Error, "token invalid")
 	}
@@ -148,7 +144,7 @@ func AllTests(r *require.Assertions, o Options) {
 		}
 		res := domain.User{}
 
-		httpclient.CallWithToken("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u1.AccountID, u1.ID), u1Token, &req, &res)
+		_, _ = httpclient.CallWithToken("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u1.AccountID, u1.ID), u1Token, &req, &res)
 
 		r.Equal(u1.ID, res.ID)
 		r.NotNil(res.UpdatedAt)
@@ -165,7 +161,7 @@ func AllTests(r *require.Assertions, o Options) {
 		}
 		res := ctrl.LoginResponse{}
 
-		httpclient.Call("POST", apiURL("/api/v1/login"), &req, &res)
+		_, _ = httpclient.Call("POST", apiURL("/api/v1/login"), &req, &res)
 
 		r.NotEmpty(res.Token)
 		r.Equal(res.User.ID, u1.ID)
@@ -182,7 +178,7 @@ func AllTests(r *require.Assertions, o Options) {
 		}
 		res := domain.User{}
 
-		httpclient.CallWithToken("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u2.AccountID, u2.ID), u2Token, &req, &res)
+		_, _ = httpclient.CallWithToken("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u2.AccountID, u2.ID), u2Token, &req, &res)
 
 		r.Equal(u2.ID, res.ID)
 		r.NotNil(res.UpdatedAt)
@@ -197,7 +193,7 @@ func AllTests(r *require.Assertions, o Options) {
 		}
 		res := errorResp{}
 
-		httpclient.CallWithToken("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u1.AccountID, u1.ID), u2Token, &req, &res)
+		_, _ = httpclient.CallWithToken("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u1.AccountID, u1.ID), u2Token, &req, &res)
 
 		r.Contains(res.Error, "could not update user")
 	}
@@ -210,7 +206,7 @@ func AllTests(r *require.Assertions, o Options) {
 			}
 			res := errorResp{}
 
-			httpclient.CallWithToken("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u1.AccountID, u1.ID), u1Token, &req, &res)
+			_, _ = httpclient.CallWithToken("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u1.AccountID, u1.ID), u1Token, &req, &res)
 
 			r.Contains(res.Error, "validation error: email")
 		}
@@ -222,19 +218,22 @@ func AllTests(r *require.Assertions, o Options) {
 			}
 			res := errorResp{}
 
-			httpclient.CallWithToken("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u1.AccountID, u1.ID), u1Token, &req, &res)
+			_, _ = httpclient.CallWithToken("PATCH", apiURL("/api/v1/accounts/%s/users/%s", u1.AccountID, u1.ID), u1Token, &req, &res)
 
 			r.Contains(res.Error, "validation error: password")
 		}
 	}
 
 	if o.TestTokenExpiration {
+		msSinceTestStarted := (time.Now().UnixNano() - now) / 1000000
+		r.True(msSinceTestStarted < 1000, "tests should only have been running for a maximum of 1,000 ms at this point")
+
 		// Token expired!
-		time.Sleep(3000 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 
 		res := errorResp{}
 
-		httpclient.CallWithToken("GET", secretURL, u1Token, nil, &res)
+		_, _ = httpclient.CallWithToken("GET", secretURL, u1Token, nil, &res)
 
 		r.Equal("token expired", res.Error)
 	}

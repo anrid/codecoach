@@ -48,7 +48,7 @@ func (su *ts) SetupSuite() {
 	c.DBName = "codecoach_test"
 
 	// Override token expires at.
-	c.TokenExpires = 3 * time.Second
+	c.TokenExpires = 1 * time.Second
 
 	su.db = pg.InitDB(c, true /* drop and recreate db every time */)
 
@@ -70,7 +70,7 @@ func (su *ts) SetupSuite() {
 
 	// Start server.
 	go func() {
-		su.serv.Echo.Start(c.Host)
+		_ = su.serv.Echo.Start(c.Host)
 	}()
 
 	zap.S().Infow("setup complete")
@@ -80,8 +80,8 @@ func (su *ts) TearDownSuite() {
 	zap.S().Infow("tear down")
 
 	su.db.Close()
-	su.serv.Echo.Shutdown(context.Background())
-	su.logger.Sync()
+	_ = su.serv.Echo.Shutdown(context.Background())
+	_ = su.logger.Sync()
 
 	zap.S().Infow("tear down complete")
 }

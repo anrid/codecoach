@@ -45,14 +45,26 @@ func (d *DAO) Create(a *domain.Account) error {
 
 // Get ...
 func (d *DAO) Get(id domain.ID) (*domain.Account, error) {
-	u := new(domain.Account)
+	a := new(domain.Account)
 
-	err := d.db.Get(u, "SELECT * FROM accounts WHERE id = $1", id)
+	err := d.db.Get(a, "SELECT * FROM accounts WHERE id = $1", id)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not get account %d", id)
+		return nil, errors.Wrapf(err, "could not get account %s", id)
 	}
 
-	return u, nil
+	return a, nil
+}
+
+// GetAll ...
+func (d *DAO) GetAll(ids []domain.ID) ([]*domain.Account, error) {
+	var as []*domain.Account
+
+	err := d.db.Select(&as, "SELECT * FROM accounts WHERE id IN $1", ids)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not get accounts with ids %v", ids)
+	}
+
+	return as, nil
 }
 
 // GetByCode ...
@@ -83,7 +95,7 @@ func (d *DAO) Update(id domain.ID, updates []domain.Field) (*domain.Account, err
 
 	_, err := d.db.Exec(q, values...)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not update account %d", id)
+		return nil, errors.Wrapf(err, "could not update account %s", id)
 	}
 
 	return d.Get(id)

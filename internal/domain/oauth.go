@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 )
 
-// OAuthUseCase ...
-type OAuthUseCase interface {
-	OAuthLoginURL() string
+// OAuthUseCases ...
+type OAuthUseCases interface {
+	OAuthLoginURL(accountCode string) string
 	OAuthSignupURL(accountName, givenName, familyName string) string
 	ExchangeCodeForUserProfile(code string, state OAuthState) (*ExternalUserProfile, error)
 }
@@ -14,7 +14,7 @@ type OAuthUseCase interface {
 // ExternalUserProfile ...
 type ExternalUserProfile struct {
 	Login     string `json:"login"`
-	ID        int    `json:"id"`
+	ID        int64  `json:"id"`
 	AvatarURL string `json:"avatar_url"`
 	URL       string `json:"url"`
 	HTMLURL   string `json:"html_url"`
@@ -32,6 +32,7 @@ type ExternalUserProfile struct {
 type OAuthState struct {
 	Type        string `json:"type"`
 	AccountName string `json:"account_name"`
+	AccountCode string `json:"account_code"`
 	GivenName   string `json:"given_name"`
 	FamilyName  string `json:"family_name"`
 	Code        string `json:"code"`

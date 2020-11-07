@@ -20,7 +20,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer logger.Sync()
+	defer func() {
+		_ = logger.Sync()
+	}()
 	zap.ReplaceGlobals(logger)
 
 	// Handle flags.
@@ -50,7 +52,7 @@ func main() {
 
 	// Setup controllers.
 	userCtrl := user_c.New(userUC)
-	oauthCtrl := oauth_c.New(oauthUC)
+	oauthCtrl := oauth_c.New(oauthUC, userUC)
 
 	// Setup routes.
 	userCtrl.SetupRoutes(serv)
