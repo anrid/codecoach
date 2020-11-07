@@ -104,7 +104,7 @@ func (d *DAO) Update(ctx context.Context, accountID, id domain.ID, updates []dom
 }
 
 // CreateTable ...
-func (d *DAO) CreateTable() {
+func (d *DAO) CreateTable() int {
 	d.db.MustExec(`
 	CREATE TABLE users (
 		account_id CHAR(20) NOT NULL,
@@ -122,4 +122,6 @@ func (d *DAO) CreateTable() {
 
 	d.db.MustExec(`CREATE UNIQUE INDEX ON users (account_id, email)`)
 	d.db.MustExec(`CREATE INDEX ON users (token)`)
+
+	return 1
 }

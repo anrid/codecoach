@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
 
@@ -28,7 +29,7 @@ func New(up UserProvider) *HTTPServer {
 	e := echo.New()
 
 	// Setup custom validator.
-	e.Validator = &customValidator{validator.New()}
+	e.Validator = newCustomValidator()
 
 	// Setup custom error handler.
 	e.HTTPErrorHandler = customErrorHandler
@@ -36,8 +37,15 @@ func New(up UserProvider) *HTTPServer {
 	// Middleware.
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(middleware.CORS())
 
+	// Setup private group, i.e. for routes that require a
+	// valid user session.
 	g := e.Group("", NewAuthMiddleware(up))
+
+	// Set default root endpoint.
+	e.GET("/", getRoot)
+	e.GET("/ace", getRoot)
 
 	return &HTTPServer{e, g}
 }
@@ -45,6 +53,13 @@ func New(up UserProvider) *HTTPServer {
 // Start ...
 func (s *HTTPServer) Start(host string) {
 	s.Echo.Logger.Fatal(s.Echo.Start(host))
+}
+
+// getRoot ...
+func getRoot(c echo.Context) error {
+	return c.JSON(http.StatusOK, echo.Map{
+		"ts": time.Now().Unix(),
+	})
 }
 
 type stackTracer interface {
@@ -88,7 +103,7 @@ func customErrorHandler(err error, c echo.Context) {
 func GetValidatorError(err error) string {
 	if verrs, ok := err.(validator.ValidationErrors); ok {
 		for _, e := range verrs {
-			return "validation error: " + strings.ToLower(e.Field())
+			return fmt.Sprintf("validation error: %s (%s)", e.Field(), e.ActualTag())
 		}
 	}
 	return ""
@@ -100,6 +115,22 @@ type errorResponse struct {
 
 type customValidator struct {
 	v *validator.Validate
+}
+
+func newCustomValidator() *customValidator {
+	v := validator.New()
+
+	// Register a custom tag name func to properly extract
+	// JSON struct field names when validating structs.
+	v.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		if name == "-" {
+			return ""
+		}
+		return name
+	})
+
+	return &customValidator{v}
 }
 
 func (cv *customValidator) Validate(i interface{}) error {

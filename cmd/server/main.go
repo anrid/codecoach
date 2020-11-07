@@ -1,8 +1,6 @@
 package main
 
 import (
-	"os"
-
 	"github.com/anrid/codecoach/internal/config"
 	oauth_c "github.com/anrid/codecoach/internal/controller/oauth"
 	user_c "github.com/anrid/codecoach/internal/controller/user"
@@ -26,7 +24,7 @@ func main() {
 	zap.ReplaceGlobals(logger)
 
 	// Handle flags.
-	initDB := pflag.Bool("init-db", false, "Drop and recreate database")
+	initDB := pflag.Bool("init-db", false, "Drop and recreate database and all tables")
 
 	pflag.Parse()
 
@@ -34,14 +32,10 @@ func main() {
 	c := config.New()
 
 	// Connect to and initialize db.
-	if *initDB {
-		pg.InitDB(c.DBHost, c.DBPort, c.DBUser, c.DBPass, c.DBName)
-		os.Exit(0)
-	}
-
-	// Connect to database.
-	db := pg.Connect(c.DBHost, c.DBPort, c.DBUser, c.DBPass, c.DBName)
+	db := pg.InitDB(c, *initDB)
 	defer db.Close()
+
+	pg.RunPinger(db)
 
 	// Setup DAOs.
 	accountDAO := account_d.New(db)

@@ -90,7 +90,7 @@ func (d *DAO) Update(id domain.ID, updates []domain.Field) (*domain.Account, err
 }
 
 // CreateTable ...
-func (d *DAO) CreateTable() {
+func (d *DAO) CreateTable() int {
 	d.db.MustExec(`
 	CREATE TABLE accounts (
 		id CHAR(20) NOT NULL,
@@ -105,4 +105,6 @@ func (d *DAO) CreateTable() {
 	)`)
 
 	d.db.MustExec(`CREATE UNIQUE INDEX ON accounts (code)`)
+
+	return 1
 }

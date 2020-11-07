@@ -50,7 +50,7 @@ func (su *ts) SetupSuite() {
 	// Override token expires at.
 	c.TokenExpires = 3 * time.Second
 
-	su.db = pg.InitDB(c.DBHost, c.DBPort, c.DBUser, c.DBPass, c.DBName)
+	su.db = pg.InitDB(c, true /* drop and recreate db every time */)
 
 	// Setup DAOs.
 	su.aD = account_dao.New(su.db)
