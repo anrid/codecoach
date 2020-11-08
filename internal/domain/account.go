@@ -51,6 +51,7 @@ func NewAccount(name string) (*Account, error) {
 // AddMember adds a new member to account, or updates a member
 // if the id already exists.
 func (a *Account) AddMember(nm Member) {
+	nm.AddedAt = time.Now()
 	for i, m := range a.Members {
 		if m.ID == nm.ID {
 			a.Members[i] = nm
@@ -92,6 +93,15 @@ type AccountDAO interface {
 	Create(u *Account) error
 	Get(id ID) (*Account, error)
 	GetByCode(code string) (*Account, error)
-	GetAll(ids []ID) ([]*Account, error)
+	GetAll(ids []ID) ([]*AccountInfo, error)
 	Update(id ID, updates []Field) (*Account, error)
+}
+
+// AccountInfo ...
+type AccountInfo struct {
+	ID        ID             `json:"id" db:"id"`
+	Name      string         `json:"name" db:"name"`
+	Code      string         `json:"code" db:"code"`
+	Profile   AccountProfile `json:"profile" db:"profile"`
+	CreatedAt time.Time      `json:"created_at" db:"created_at"`
 }

@@ -80,7 +80,7 @@ type UserUseCases interface {
 	Signup(ctx context.Context, a SignupArgs) (*SignupResult, error)
 	Login(ctx context.Context, accountCode, email, password string) (*LoginResult, error)
 	GithubLogin(ctx context.Context, accountCode string, githubID int64) (*LoginResult, error)
-	GithubGetAvailableAccounts(ctx context.Context, githubID int64) ([]*Account, error)
+	GithubGetAvailableAccounts(ctx context.Context, githubID int64) ([]*AccountInfo, error)
 	Create(ctx context.Context, a CreateUserArgs) (*User, error)
 	Update(ctx context.Context, accountID, id ID, a UpdateArgs) (*User, error)
 }

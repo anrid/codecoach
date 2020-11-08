@@ -56,10 +56,10 @@ func (d *DAO) Get(id domain.ID) (*domain.Account, error) {
 }
 
 // GetAll ...
-func (d *DAO) GetAll(ids []domain.ID) ([]*domain.Account, error) {
-	var as []*domain.Account
+func (d *DAO) GetAll(ids []domain.ID) ([]*domain.AccountInfo, error) {
+	var as []*domain.AccountInfo
 
-	err := d.db.Select(&as, "SELECT * FROM accounts WHERE id IN $1", ids)
+	err := d.db.Select(&as, "SELECT id, name, code, profile, created_at  FROM accounts WHERE id IN $1", ids)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not get accounts with ids %v", ids)
 	}

@@ -174,11 +174,11 @@ func (co *Controller) GetOAuthCallback(c echo.Context) error {
 
 // GetOAuthCallbackResponse ...
 type GetOAuthCallbackResponse struct {
-	Account           *domain.Account   `json:"account"`
-	User              *domain.User      `json:"user"`
-	Token             string            `json:"token"`
-	AvailableAccounts []*domain.Account `json:"available_accounts"`
-	Type              responseType      `json:"type"`
+	Account           *domain.Account       `json:"account"`
+	User              *domain.User          `json:"user"`
+	Token             string                `json:"token"`
+	AvailableAccounts []*domain.AccountInfo `json:"available_accounts"`
+	Type              responseType          `json:"type"`
 }
 
 type responseType string

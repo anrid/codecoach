@@ -194,7 +194,7 @@ func (uc *UseCase) GithubLogin(ctx context.Context, accountCode string, githubID
 
 // GithubGetAvailableAccounts returns all available accounts
 // for an authenticated Github user.
-func (uc *UseCase) GithubGetAvailableAccounts(ctx context.Context, githubID int64) ([]*domain.Account, error) {
+func (uc *UseCase) GithubGetAvailableAccounts(ctx context.Context, githubID int64) ([]*domain.AccountInfo, error) {
 	// Get all users with the same Github ID.
 	us, err := uc.u.GetAllByGithubID(ctx, githubID)
 	if err != nil {
