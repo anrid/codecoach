@@ -70,7 +70,7 @@ func AllTests(r *require.Assertions, o Options) {
 			FamilyName: "Base",
 			Email:      fmt.Sprintf("hm-%d@example.com", now),
 			Password:   "massa123",
-			Role:       domain.HiringManagerRole,
+			Role:       domain.RoleHiringManager,
 		}
 		res := domain.User{}
 

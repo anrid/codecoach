@@ -1,3 +1,4 @@
+#!/bin/bash
 set -a
 
 HOST=:9001

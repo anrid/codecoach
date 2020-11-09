@@ -1,0 +1,406 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is the CodeCoach API.",
+        "title": "CodeCoach API",
+        "termsOfService": "http://codecoach.us/terms/",
+        "contact": {
+            "name": "API Support",
+            "url": "http://www.codecoach.us/support",
+            "email": "support@codecoach.us"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "api.codecoach.us",
+    "basePath": "/api/v1",
+    "paths": {
+        "/accounts/{account_id}/secret": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Get a private test string, used to test user session.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get a private test string, used to test user session.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Account ID",
+                        "name": "account_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user.GetSecretResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/{account_id}/users": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Create a new user in an account.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Create a new user in an account.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Account ID",
+                        "name": "account_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Post User Request",
+                        "name": "opts",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.PostUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/{account_id}/users/{id}": {
+            "patch": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Update a user in an account.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update a user in an account.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Account ID",
+                        "name": "account_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Patch User Request",
+                        "name": "opts",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.PatchUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/oauth/login-url": {
+            "post": {
+                "description": "Get a URL to login via Github.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get a URL to login via Github.",
+                "parameters": [
+                    {
+                        "description": "Options",
+                        "name": "opts",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/oauth.PostOAuthLoginURLRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/oauth.PostOAuthLoginURLResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/oauth/signup-url": {
+            "post": {
+                "description": "Get a URL to signup via Github.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get a URL to signup via Github.",
+                "parameters": [
+                    {
+                        "description": "Options",
+                        "name": "opts",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/oauth.PostOAuthSignupURLRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/oauth.PostOAuthSignupURLResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "domain.User": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "github_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "profile": {
+                    "$ref": "#/definitions/domain.UserProfile"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.UserProfile": {
+            "type": "object",
+            "properties": {
+                "family_name": {
+                    "type": "string"
+                },
+                "github_login": {
+                    "type": "string"
+                },
+                "given_name": {
+                    "type": "string"
+                },
+                "is_suspended": {
+                    "type": "boolean"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "photo_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "httpserver.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "object"
+                }
+            }
+        },
+        "oauth.PostOAuthLoginURLRequest": {
+            "type": "object",
+            "properties": {
+                "account_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "oauth.PostOAuthLoginURLResponse": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "oauth.PostOAuthSignupURLRequest": {
+            "type": "object",
+            "required": [
+                "account_name",
+                "family_name",
+                "given_name"
+            ],
+            "properties": {
+                "account_name": {
+                    "type": "string"
+                },
+                "family_name": {
+                    "type": "string"
+                },
+                "given_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "oauth.PostOAuthSignupURLResponse": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.GetSecretResponse": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "secret": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.PatchUserRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "family_name": {
+                    "type": "string"
+                },
+                "given_name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.PostUserRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "family_name",
+                "given_name",
+                "password",
+                "role"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "family_name": {
+                    "type": "string"
+                },
+                "given_name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

@@ -1,8 +1,6 @@
 package domain
 
 import (
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -18,16 +16,6 @@ type Account struct {
 	OwnerID   ID             `json:"owner_id" db:"owner_id"`
 	CreatedAt time.Time      `json:"created_at" db:"created_at"`
 	UpdatedAt *time.Time     `json:"updated_at" db:"updated_at"`
-}
-
-var (
-	notKebabCase = regexp.MustCompile(`[^a-z0-9\-]+`)
-)
-
-// CreateCode creates a kebab-case string.
-func CreateCode(s string) string {
-	code := notKebabCase.ReplaceAllString(strings.ToLower(s), "-")
-	return strings.Trim(code, "- ")
 }
 
 // NewAccount ...
@@ -70,12 +58,12 @@ type AccountProfile struct {
 type Role string
 
 const (
-	// AdminRole ...
-	AdminRole Role = "admin"
-	// HiringManagerRole ...
-	HiringManagerRole Role = "hiring_manager"
-	// CandidateRole ...
-	CandidateRole Role = "candidate"
+	// RoleAdmin ...
+	RoleAdmin Role = "admin"
+	// RoleHiringManager ...
+	RoleHiringManager Role = "hiring_manager"
+	// RoleCandidate ...
+	RoleCandidate Role = "candidate"
 )
 
 // Member ...

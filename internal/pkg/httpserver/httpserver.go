@@ -108,7 +108,7 @@ func customErrorHandler(err error, c echo.Context) {
 		message = he.Message
 	}
 
-	_ = c.JSON(code, errorResponse{message})
+	_ = c.JSON(code, ErrorResponse{message})
 }
 
 // GetValidatorError ...
@@ -121,7 +121,8 @@ func GetValidatorError(err error) string {
 	return ""
 }
 
-type errorResponse struct {
+// ErrorResponse ...
+type ErrorResponse struct {
 	Error interface{} `json:"error"`
 }
 

@@ -34,7 +34,7 @@ func (uc *UseCase) Signup(ctx context.Context, sa domain.SignupArgs) (*domain.Si
 	}
 
 	// Create account admin.
-	u := domain.NewUser(a.ID, sa.GivenName, sa.FamilyName, sa.Email, sa.Password, domain.AdminRole)
+	u := domain.NewUser(a.ID, sa.GivenName, sa.FamilyName, sa.Email, sa.Password, domain.RoleAdmin)
 
 	// Add additional fields (if available).
 	u.GithubID = sa.GithubID
@@ -45,7 +45,7 @@ func (uc *UseCase) Signup(ctx context.Context, sa domain.SignupArgs) (*domain.Si
 	// Add admin to account.
 	a.AddMember(domain.Member{
 		ID:      u.ID,
-		Role:    domain.AdminRole,
+		Role:    domain.RoleAdmin,
 		AddedAt: time.Now(),
 	})
 	a.OwnerID = u.ID
@@ -240,7 +240,7 @@ func (uc *UseCase) Update(ctx context.Context, accountID, id domain.ID, a domain
 	}
 
 	// Admins can update any user in their account.
-	if se.User.Role != domain.AdminRole {
+	if se.User.Role != domain.RoleAdmin {
 		if se.User.ID != id {
 			return nil, errors.Errorf("current user %s.%s (role: %s) cannot update user %s.%s", se.User.AccountID, se.User.ID, se.User.Role, accountID, id)
 		}

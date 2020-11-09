@@ -30,6 +30,14 @@ func (co *Controller) SetupRoutes(s *httpserver.HTTPServer) {
 }
 
 // PostOAuthLoginURL ...
+// @Summary Get a URL to login via Github.
+// @Description Get a URL to login via Github.
+// @Accept json
+// @Produce json
+// @Param opts body oauth.PostOAuthLoginURLRequest false "Options"
+// @Success 200 {object} oauth.PostOAuthLoginURLResponse
+// @Failure 400 {object} httpserver.ErrorResponse
+// @Router /oauth/login-url [post]
 func (co *Controller) PostOAuthLoginURL(c echo.Context) (err error) {
 	r := new(PostOAuthLoginURLRequest)
 	if err = httpserver.BindAndValidate(c, r); err != nil {
@@ -41,7 +49,7 @@ func (co *Controller) PostOAuthLoginURL(c echo.Context) (err error) {
 
 // PostOAuthLoginURLRequest ...
 type PostOAuthLoginURLRequest struct {
-	AccountCode string `json:"account_code" validate:"required,gte=2"`
+	AccountCode string `json:"account_code" validate:"omitempty,gte=2"`
 }
 
 // PostOAuthLoginURLResponse ...
@@ -50,6 +58,14 @@ type PostOAuthLoginURLResponse struct {
 }
 
 // PostOAuthSignupURL ...
+// @Summary Get a URL to signup via Github.
+// @Description Get a URL to signup via Github.
+// @Accept json
+// @Produce json
+// @Param opts body oauth.PostOAuthSignupURLRequest false "Options"
+// @Success 200 {object} oauth.PostOAuthSignupURLResponse
+// @Failure 400 {object} httpserver.ErrorResponse
+// @Router /oauth/signup-url [post]
 func (co *Controller) PostOAuthSignupURL(c echo.Context) (err error) {
 	r := new(PostOAuthSignupURLRequest)
 	if err = httpserver.BindAndValidate(c, r); err != nil {

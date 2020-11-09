@@ -1,0 +1,264 @@
+basePath: /api/v1
+definitions:
+  domain.User:
+    properties:
+      account_id:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      github_id:
+        type: integer
+      id:
+        type: string
+      profile:
+        $ref: '#/definitions/domain.UserProfile'
+      role:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.UserProfile:
+    properties:
+      family_name:
+        type: string
+      github_login:
+        type: string
+      given_name:
+        type: string
+      is_suspended:
+        type: boolean
+      location:
+        type: string
+      photo_url:
+        type: string
+    type: object
+  httpserver.ErrorResponse:
+    properties:
+      error:
+        type: object
+    type: object
+  oauth.PostOAuthLoginURLRequest:
+    properties:
+      account_code:
+        type: string
+    type: object
+  oauth.PostOAuthLoginURLResponse:
+    properties:
+      url:
+        type: string
+    type: object
+  oauth.PostOAuthSignupURLRequest:
+    properties:
+      account_name:
+        type: string
+      family_name:
+        type: string
+      given_name:
+        type: string
+    required:
+    - account_name
+    - family_name
+    - given_name
+    type: object
+  oauth.PostOAuthSignupURLResponse:
+    properties:
+      url:
+        type: string
+    type: object
+  user.GetSecretResponse:
+    properties:
+      account_id:
+        type: string
+      id:
+        type: string
+      secret:
+        type: string
+    type: object
+  user.PatchUserRequest:
+    properties:
+      email:
+        type: string
+      family_name:
+        type: string
+      given_name:
+        type: string
+      password:
+        type: string
+    type: object
+  user.PostUserRequest:
+    properties:
+      email:
+        type: string
+      family_name:
+        type: string
+      given_name:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+    required:
+    - email
+    - family_name
+    - given_name
+    - password
+    - role
+    type: object
+host: api.codecoach.us
+info:
+  contact:
+    email: support@codecoach.us
+    name: API Support
+    url: http://www.codecoach.us/support
+  description: This is the CodeCoach API.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://codecoach.us/terms/
+  title: CodeCoach API
+  version: "1.0"
+paths:
+  /accounts/{account_id}/secret:
+    get:
+      description: Get a private test string, used to test user session.
+      parameters:
+      - description: Account ID
+        in: path
+        name: account_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.GetSecretResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get a private test string, used to test user session.
+  /accounts/{account_id}/users:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user in an account.
+      parameters:
+      - description: Account ID
+        in: path
+        name: account_id
+        required: true
+        type: string
+      - description: Post User Request
+        in: body
+        name: opts
+        required: true
+        schema:
+          $ref: '#/definitions/user.PostUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create a new user in an account.
+  /accounts/{account_id}/users/{id}:
+    patch:
+      consumes:
+      - application/json
+      description: Update a user in an account.
+      parameters:
+      - description: Account ID
+        in: path
+        name: account_id
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Patch User Request
+        in: body
+        name: opts
+        required: true
+        schema:
+          $ref: '#/definitions/user.PatchUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update a user in an account.
+  /oauth/login-url:
+    post:
+      consumes:
+      - application/json
+      description: Get a URL to login via Github.
+      parameters:
+      - description: Options
+        in: body
+        name: opts
+        schema:
+          $ref: '#/definitions/oauth.PostOAuthLoginURLRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/oauth.PostOAuthLoginURLResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+      summary: Get a URL to login via Github.
+  /oauth/signup-url:
+    post:
+      consumes:
+      - application/json
+      description: Get a URL to signup via Github.
+      parameters:
+      - description: Options
+        in: body
+        name: opts
+        schema:
+          $ref: '#/definitions/oauth.PostOAuthSignupURLRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/oauth.PostOAuthSignupURLResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorResponse'
+      summary: Get a URL to signup via Github.
+securityDefinitions:
+  Bearer:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

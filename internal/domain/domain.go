@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -73,4 +75,14 @@ func RequireSession(ctx context.Context) (*Session, error) {
 		return nil, errors.New("session is of invalid type")
 	}
 	return s, nil
+}
+
+var (
+	notKebabCase = regexp.MustCompile(`[^a-z0-9\-]+`)
+)
+
+// CreateCode creates a kebab-case string.
+func CreateCode(s string) string {
+	code := notKebabCase.ReplaceAllString(strings.ToLower(s), "-")
+	return strings.Trim(code, "- ")
 }

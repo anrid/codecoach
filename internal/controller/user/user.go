@@ -28,6 +28,14 @@ func (co *Controller) SetupRoutes(s *httpserver.HTTPServer) {
 }
 
 // GetSecret ...
+// @Summary Get a private test string, used to test user session.
+// @Description Get a private test string, used to test user session.
+// @Produce json
+// @Security Bearer
+// @Param account_id path string true "Account ID"
+// @Success 200 {object} user.GetSecretResponse
+// @Failure 400 {object} httpserver.ErrorResponse
+// @Router /accounts/{account_id}/secret [get]
 func (co *Controller) GetSecret(c echo.Context) error {
 	se, err := domain.RequireSession(c.Request().Context())
 	if err != nil {
@@ -49,6 +57,16 @@ type GetSecretResponse struct {
 }
 
 // PostUser ...
+// @Summary Create a new user in an account.
+// @Description Create a new user in an account.
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param account_id path string true "Account ID"
+// @Param opts body user.PostUserRequest true "Post User Request"
+// @Success 200 {object} domain.User
+// @Failure 400 {object} httpserver.ErrorResponse
+// @Router /accounts/{account_id}/users [post]
 func (co *Controller) PostUser(c echo.Context) (err error) {
 	r := new(PostUserRequest)
 	if err = httpserver.BindAndValidate(c, r); err != nil {
@@ -140,6 +158,17 @@ type LoginResponse struct {
 }
 
 // PatchUser ...
+// @Summary Update a user in an account.
+// @Description Update a user in an account.
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param account_id path string true "Account ID"
+// @Param id path string true "User ID"
+// @Param opts body user.PatchUserRequest true "Patch User Request"
+// @Success 200 {object} domain.User
+// @Failure 400 {object} httpserver.ErrorResponse
+// @Router /accounts/{account_id}/users/{id} [patch]
 func (co *Controller) PatchUser(c echo.Context) (err error) {
 	accountID := domain.ID(c.Param("account_id"))
 	id := domain.ID(c.Param("id"))
