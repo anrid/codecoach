@@ -1,3 +1,2 @@
 #!/bin/bash
-source config.sh
-go test ./... -count=1
+APP_ENV=test go test ./... -count=1

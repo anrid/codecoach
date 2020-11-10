@@ -61,13 +61,15 @@ func (u *UseCase) ExchangeCodeForUserProfile(code string, state domain.OAuthStat
 		return nil, errors.Wrap(err, "could not exchange oauth code for access token")
 	}
 
-	up, err := github.GetAuthenticatedUser(res.AccessToken)
+	api := github.New(res.AccessToken)
+
+	gu, err := api.CurrentUser()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get user profile")
 	}
 
 	// Convert.
-	eup := domain.ExternalUserProfile(*up)
+	eup := domain.ExternalUserProfile(*gu)
 
 	return &eup, nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -22,22 +23,50 @@ type User struct {
 	UpdatedAt      *time.Time  `json:"updated_at" db:"updated_at"`
 }
 
+type NewUserArgs struct {
+	AccountID  ID
+	GivenName  string
+	FamilyName string
+	Email      string
+	Password   string
+	Role       Role
+}
+
 // NewUser ...
-func NewUser(accountID ID, givenName, familyName, email, password string, role Role) *User {
+func NewUser(a NewUserArgs) (*User, error) {
+	if a.AccountID == "" {
+		return nil, errors.Errorf("missing account_id arg")
+	}
+	if a.GivenName == "" {
+		return nil, errors.Errorf("missing given_name arg")
+	}
+	if a.FamilyName == "" {
+		return nil, errors.Errorf("missing family_name arg")
+	}
+	if a.Email == "" {
+		return nil, errors.Errorf("missing email arg")
+	}
+	if a.Password == "" || len(a.Password) < 8 {
+		return nil, errors.Errorf("missing or invalid password arg")
+	}
+	if a.Role == "" {
+		return nil, errors.Errorf("missing role arg")
+	}
+
 	u := &User{
-		AccountID: accountID,
+		AccountID: a.AccountID,
 		ID:        NewID(),
-		Email:     email,
+		Email:     a.Email,
 		Profile: UserProfile{
-			GivenName:  givenName,
-			FamilyName: familyName,
+			GivenName:  a.GivenName,
+			FamilyName: a.FamilyName,
 		},
-		Role:      role,
+		Role:      a.Role,
 		CreatedAt: time.Now(),
 	}
-	u.SetPassword(password)
+	u.SetPassword(a.Password)
 
-	return u
+	return u, nil
 }
 
 // SetPassword ...

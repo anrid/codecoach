@@ -2,7 +2,12 @@ package config
 
 import (
 	"os"
+	"path"
+	"runtime"
 	"time"
+
+	"github.com/joho/godotenv"
+	"go.uber.org/zap"
 )
 
 // Config ...
@@ -16,11 +21,38 @@ type Config struct {
 	GithubClientID     string
 	GithubClientSecret string
 	GithubRedirectURI  string
+	GithubAccessToken  string
 	TokenExpires       time.Duration
 }
 
 // New ...
 func New() *Config {
+	// Load .env files.
+	env := os.Getenv("APP_ENV")
+	if env == "" {
+		env = "development"
+	}
+
+	root := ""
+	if env == "test" {
+		// Get project root dir.
+		_, filename, _, _ := runtime.Caller(0)
+		root = path.Join(path.Dir(filename), "..", "..")
+	}
+
+	envFile := func(n string) error {
+		return godotenv.Load(path.Join(root, n))
+	}
+
+	_ = envFile(".env." + env + ".local")
+	if env != "test" {
+		_ = envFile(".env.local")
+	}
+	err := envFile(".env")
+	if err != nil {
+		zap.S().Fatalw("error loading .env file", "error", err)
+	}
+
 	return &Config{
 		Host:               mustEnv("HOST"),
 		DBHost:             mustEnv("DB_HOST"),
@@ -31,6 +63,7 @@ func New() *Config {
 		GithubClientID:     mustEnv("GITHUB_CLIENT_ID"),
 		GithubClientSecret: mustEnv("GITHUB_CLIENT_SECRET"),
 		GithubRedirectURI:  mustEnv("GITHUB_REDIRECT_URI"),
+		GithubAccessToken:  mustEnv("GITHUB_ACCESS_TOKEN"),
 		TokenExpires:       24 * 7 * time.Hour,
 	}
 }

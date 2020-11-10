@@ -13,8 +13,8 @@ type OAuthUseCases interface {
 
 // ExternalUserProfile ...
 type ExternalUserProfile struct {
-	Login     string `json:"login"`
 	ID        int64  `json:"id"`
+	Login     string `json:"login"`
 	AvatarURL string `json:"avatar_url"`
 	URL       string `json:"url"`
 	HTMLURL   string `json:"html_url"`

@@ -5,14 +5,11 @@ services:
     build:
       context: ..
       dockerfile: ./build/Dockerfile
+    env_file:
+      - ../.env
+      - ../.env.docker.local
     environment:
-      HOST: :9001
-      DB_HOST: roach1
-      DB_PORT: 26257
-      DB_USER: root
-      DB_PASS: example
-      DB_NAME: codecoach
-      GITHUB_OAUTH_CLIENT_ID: xxx
+      APP_ENV: docker
     ports:
       - "9001:9001"
     networks:

@@ -34,7 +34,17 @@ func (uc *UseCase) Signup(ctx context.Context, sa domain.SignupArgs) (*domain.Si
 	}
 
 	// Create account admin.
-	u := domain.NewUser(a.ID, sa.GivenName, sa.FamilyName, sa.Email, sa.Password, domain.RoleAdmin)
+	u, err := domain.NewUser(domain.NewUserArgs{
+		AccountID:  a.ID,
+		GivenName:  sa.GivenName,
+		FamilyName: sa.FamilyName,
+		Email:      sa.Email,
+		Password:   sa.Password,
+		Role:       domain.RoleAdmin,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create account admin (user)")
+	}
 
 	// Add additional fields (if available).
 	u.GithubID = sa.GithubID
@@ -222,7 +232,17 @@ func (uc *UseCase) Create(ctx context.Context, a domain.CreateUserArgs) (*domain
 		return nil, err
 	}
 
-	u := domain.NewUser(se.User.AccountID, a.GivenName, a.FamilyName, a.Email, a.Password, a.Role)
+	u, err := domain.NewUser(domain.NewUserArgs{
+		AccountID:  se.User.AccountID,
+		GivenName:  a.GivenName,
+		FamilyName: a.FamilyName,
+		Email:      a.Email,
+		Password:   a.Password,
+		Role:       a.Role,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create user")
+	}
 
 	err = uc.u.Create(ctx, u)
 	if err != nil {

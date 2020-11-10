@@ -1,15 +1,5 @@
 {
-    "go.testEnvVars": {
-        "HOST": "9001",
-        "DB_HOST": "localhost",
-        "DB_PORT": "26257",
-        "DB_USER": "root",
-        "DB_PASS": "example",
-        "DB_NAME": "userapi",
-        "GITHUB_CLIENT_ID": "xxx",
-        "GITHUB_CLIENT_SECRET": "xxx",
-        "GITHUB_REDIRECT_URI": "http://localhost:9001/api/v1/oauth/callback"
-    },
+    "go.testEnvFile": "${workspaceFolder}/.env.test.local",
     "go.testFlags": ["-count=1"],
     "go.lintOnSave": "workspace",
     "go.lintTool": "golangci-lint"

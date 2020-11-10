@@ -20,6 +20,10 @@ type Account struct {
 
 // NewAccount ...
 func NewAccount(name string) (*Account, error) {
+	if name == "" {
+		return nil, errors.Errorf("missing name arg")
+	}
+
 	// Create account code from account name.
 	code := CreateCode(name)
 	if len(code) < 2 {
