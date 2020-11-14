@@ -93,6 +93,35 @@ func (d *DAO) GetAllByGithubID(ctx context.Context, githubID int64) ([]*domain.U
 	return us, nil
 }
 
+// GetAll ...
+func (d *DAO) GetAll(ctx context.Context, accountID, id domain.ID) ([]*domain.User, int, error) {
+	fields := "account_id, id, github_id, email, profile, role"
+
+	sqlC := "SELECT COUNT(*) FROM users WHERE account_id = $1 AND id = $2"
+	sqlN := "SELECT " + fields + " FROM users WHERE account_id = $1 AND id = $2"
+	args := []interface{}{accountID, id}
+
+	if id == "" {
+		sqlC = "SELECT COUNT(*) FROM users WHERE account_id = $1"
+		sqlN = "SELECT " + fields + " FROM users WHERE account_id = $1"
+		args = []interface{}{accountID}
+	}
+
+	var total int
+	err := d.db.Get(&total, sqlC, args...)
+	if err != nil {
+		return nil, 0, errors.Wrapf(err, "could not list users (count)")
+	}
+
+	var us []*domain.User
+	err = d.db.Select(&us, sqlN, args...)
+	if err != nil {
+		return nil, 0, errors.Wrapf(err, "could not list users")
+	}
+
+	return us, total, nil
+}
+
 // GetByToken ...
 func (d *DAO) GetByToken(ctx context.Context, token string) (*domain.User, error) {
 	u := new(domain.User)

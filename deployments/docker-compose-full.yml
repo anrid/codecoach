@@ -16,7 +16,7 @@ services:
       - codecoach-net
 
   roach1:
-    image: cockroachdb/cockroach:latest-v20.1
+    image: cockroachdb/cockroach:latest-v20.2
     hostname: roach1
     command: start-single-node --insecure
     restart: always

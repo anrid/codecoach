@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"time"
 
 	"github.com/pkg/errors"
@@ -82,11 +83,11 @@ type Members []Member
 
 // AccountDAO ...
 type AccountDAO interface {
-	Create(u *Account) error
-	Get(id ID) (*Account, error)
-	GetByCode(code string) (*Account, error)
-	GetAll(ids []ID) ([]*AccountInfo, error)
-	Update(id ID, updates []Field) (*Account, error)
+	Create(ctx context.Context, u *Account) error
+	Get(ctx context.Context, id ID) (*Account, error)
+	GetByCode(ctx context.Context, code string) (*Account, error)
+	GetAll(ctx context.Context, ids []ID) ([]*AccountInfo, error)
+	Update(ctx context.Context, id ID, updates []Field) (*Account, error)
 }
 
 // AccountInfo ...
@@ -96,4 +97,15 @@ type AccountInfo struct {
 	Code      string         `json:"code" db:"code"`
 	Profile   AccountProfile `json:"profile" db:"profile"`
 	CreatedAt time.Time      `json:"created_at" db:"created_at"`
+}
+
+// AccountUseCases ...
+type AccountUseCases interface {
+	Update(ctx context.Context, id ID, a UpdateAccountArgs) (*Account, error)
+}
+
+// UpdateAccountArgs ...
+type UpdateAccountArgs struct {
+	Name string
+	Logo string
 }

@@ -100,6 +100,7 @@ type UserDAO interface {
 	GetByEmail(ctx context.Context, accountID ID, email string) (*User, error)
 	GetByGithubID(ctx context.Context, accountID ID, githubID int64) (*User, error)
 	GetAllByGithubID(ctx context.Context, githubID int64) ([]*User, error)
+	GetAll(ctx context.Context, accountID, id ID) ([]*User, int, error)
 	GetByToken(ctx context.Context, token string) (*User, error)
 	Update(ctx context.Context, accountID, id ID, updates []Field) (*User, error)
 }
@@ -111,7 +112,8 @@ type UserUseCases interface {
 	GithubLogin(ctx context.Context, accountCode string, githubID int64) (*LoginResult, error)
 	GithubGetAvailableAccounts(ctx context.Context, githubID int64) ([]*AccountInfo, error)
 	Create(ctx context.Context, a CreateUserArgs) (*User, error)
-	Update(ctx context.Context, accountID, id ID, a UpdateArgs) (*User, error)
+	Update(ctx context.Context, accountID, id ID, a UpdateUserArgs) (*User, error)
+	List(ctx context.Context, se *Session, max int) (*ListUsersResult, error)
 }
 
 // SignupArgs ...
@@ -150,10 +152,16 @@ type CreateUserArgs struct {
 	Role       Role
 }
 
-// UpdateArgs ...
-type UpdateArgs struct {
+// UpdateUserArgs ...
+type UpdateUserArgs struct {
 	GivenName  string
 	FamilyName string
 	Email      string
 	Password   string
+}
+
+// ListUsersResult ...
+type ListUsersResult struct {
+	Users []*User
+	Total int
 }

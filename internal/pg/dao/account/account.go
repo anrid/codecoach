@@ -1,14 +1,16 @@
 package account
 
 import (
-	"fmt"
-	"strings"
+	"context"
 	"time"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/anrid/codecoach/internal/domain"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
+
+var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
 // DAO ...
 type DAO struct {
@@ -23,7 +25,7 @@ func New(db *sqlx.DB) *DAO {
 }
 
 // Create ...
-func (d *DAO) Create(a *domain.Account) error {
+func (d *DAO) Create(ctx context.Context, a *domain.Account) error {
 	stmt, err := d.db.PrepareNamed(`
 	INSERT INTO accounts
 		(id, name, code, profile, members, owner_id, created_at)
@@ -44,7 +46,7 @@ func (d *DAO) Create(a *domain.Account) error {
 }
 
 // Get ...
-func (d *DAO) Get(id domain.ID) (*domain.Account, error) {
+func (d *DAO) Get(ctx context.Context, id domain.ID) (*domain.Account, error) {
 	a := new(domain.Account)
 
 	err := d.db.Get(a, "SELECT * FROM accounts WHERE id = $1", id)
@@ -56,7 +58,7 @@ func (d *DAO) Get(id domain.ID) (*domain.Account, error) {
 }
 
 // GetAll ...
-func (d *DAO) GetAll(ids []domain.ID) ([]*domain.AccountInfo, error) {
+func (d *DAO) GetAll(ctx context.Context, ids []domain.ID) ([]*domain.AccountInfo, error) {
 	var as []*domain.AccountInfo
 
 	err := d.db.Select(&as, "SELECT id, name, code, profile, created_at  FROM accounts WHERE id IN $1", ids)
@@ -68,7 +70,7 @@ func (d *DAO) GetAll(ids []domain.ID) ([]*domain.AccountInfo, error) {
 }
 
 // GetByCode ...
-func (d *DAO) GetByCode(code string) (*domain.Account, error) {
+func (d *DAO) GetByCode(ctx context.Context, code string) (*domain.Account, error) {
 	u := new(domain.Account)
 
 	err := d.db.Get(u, "SELECT * FROM accounts WHERE code = $1", code)
@@ -80,25 +82,27 @@ func (d *DAO) GetByCode(code string) (*domain.Account, error) {
 }
 
 // Update ...
-func (d *DAO) Update(id domain.ID, updates []domain.Field) (*domain.Account, error) {
-	var fields []string
-	var values []interface{}
+func (d *DAO) Update(ctx context.Context, id domain.ID, updates []domain.Field) (*domain.Account, error) {
+	q := psql.Update("accounts").Where("id = ?", id)
 
-	updates = append(updates, domain.Field{Name: "updated_at", Value: time.Now()})
+	for _, u := range updates {
+		q = q.Set(u.Name, u.Value)
+	}
+	q = q.Set("updated_at", time.Now())
 
-	for i, u := range updates {
-		fields = append(fields, fmt.Sprintf("%s = $%d", u.Name, i+1))
-		values = append(values, u.Value)
+	sql, args, err := q.ToSql()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create update query")
 	}
 
-	q := fmt.Sprintf(`UPDATE accounts SET %s WHERE id = %s`, strings.Join(fields, ", "), id)
+	println(sql)
 
-	_, err := d.db.Exec(q, values...)
+	_, err = d.db.Exec(sql, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not update account %s", id)
 	}
 
-	return d.Get(id)
+	return d.Get(ctx, id)
 }
 
 // CreateTable ...

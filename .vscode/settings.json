@@ -1,5 +1,8 @@
 {
     "go.testEnvFile": "${workspaceFolder}/.env.test.local",
+    "go.testEnvVars": {
+        "APP_ENV": "test"
+    },
     "go.testFlags": ["-count=1"],
     "go.lintOnSave": "workspace",
     "go.lintTool": "golangci-lint"

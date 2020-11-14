@@ -61,7 +61,7 @@ func (uc *UseCase) Signup(ctx context.Context, sa domain.SignupArgs) (*domain.Si
 	a.OwnerID = u.ID
 
 	// Save account.
-	err = uc.a.Create(a)
+	err = uc.a.Create(ctx, a)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create account")
 	}
@@ -103,7 +103,7 @@ func (uc *UseCase) Login(ctx context.Context, accountCode, email, password strin
 	}
 
 	// Get account by account code.
-	a, err := uc.a.GetByCode(accountCode)
+	a, err := uc.a.GetByCode(ctx, accountCode)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid account, email or password")
 	}
@@ -160,7 +160,7 @@ func (uc *UseCase) GithubLogin(ctx context.Context, accountCode string, githubID
 	}
 
 	// Get account by account code.
-	a, err := uc.a.GetByCode(accountCode)
+	a, err := uc.a.GetByCode(ctx, accountCode)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid account or github id")
 	}
@@ -217,7 +217,7 @@ func (uc *UseCase) GithubGetAvailableAccounts(ctx context.Context, githubID int6
 	}
 
 	// Get all available accounts for user.
-	as, err := uc.a.GetAll(accountIDs)
+	as, err := uc.a.GetAll(ctx, accountIDs)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not get accounts %v", accountIDs)
 	}
@@ -253,7 +253,7 @@ func (uc *UseCase) Create(ctx context.Context, a domain.CreateUserArgs) (*domain
 }
 
 // Update ...
-func (uc *UseCase) Update(ctx context.Context, accountID, id domain.ID, a domain.UpdateArgs) (*domain.User, error) {
+func (uc *UseCase) Update(ctx context.Context, accountID, id domain.ID, a domain.UpdateUserArgs) (*domain.User, error) {
 	se, err := domain.RequireSession(ctx)
 	if err != nil {
 		return nil, err
@@ -287,4 +287,23 @@ func (uc *UseCase) Update(ctx context.Context, accountID, id domain.ID, a domain
 	}
 
 	return up, nil
+}
+
+// List ...
+func (uc *UseCase) List(ctx context.Context, se *domain.Session, page int) (*domain.ListUsersResult, error) {
+	// Only admins can list all users.
+	var onlyUserID = se.User.ID
+	if se.User.Role == domain.RoleAdmin {
+		onlyUserID = ""
+	}
+
+	us, total, err := uc.u.GetAll(ctx, se.User.AccountID, onlyUserID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could find users in account %s", se.User.AccountID)
+	}
+
+	return &domain.ListUsersResult{
+		Users: us,
+		Total: total,
+	}, nil
 }

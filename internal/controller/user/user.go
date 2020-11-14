@@ -2,6 +2,7 @@ package user
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/anrid/codecoach/internal/domain"
 	"github.com/anrid/codecoach/internal/pkg/httpserver"
@@ -23,6 +24,7 @@ func (co *Controller) SetupRoutes(s *httpserver.HTTPServer) {
 	s.Echo.POST("/api/v1/signup", co.Signup)
 	s.Echo.POST("/api/v1/login", co.Login)
 	s.Private.POST("/api/v1/accounts/:account_id/users", co.PostUser)
+	s.Private.GET("/api/v1/accounts/:account_id/users", co.GetList)
 	s.Private.PATCH("/api/v1/accounts/:account_id/users/:id", co.PatchUser)
 	s.Private.GET("/api/v1/accounts/:account_id/secret", co.GetSecret)
 }
@@ -178,7 +180,7 @@ func (co *Controller) PatchUser(c echo.Context) (err error) {
 		return err
 	}
 
-	u, err := co.u.Update(c.Request().Context(), accountID, id, domain.UpdateArgs(*r))
+	u, err := co.u.Update(c.Request().Context(), accountID, id, domain.UpdateUserArgs(*r))
 	if err != nil {
 		return httpserver.NewError(http.StatusInternalServerError, err, "could not update user")
 	}
@@ -192,4 +194,46 @@ type PatchUserRequest struct {
 	FamilyName string `json:"family_name" validate:"omitempty,gte=1"`
 	Email      string `json:"email" validate:"omitempty,email"`
 	Password   string `json:"password" validate:"omitempty,gte=8"`
+}
+
+// GetList ...
+// @Summary Get a list of users in an account.
+// @Description Get a list of users in an account.
+// @Produce json
+// @Security Bearer
+// @Param account_id path string true "Account ID"
+// @Success 200 {object} user.GetListResponse
+// @Failure 400 {object} httpserver.ErrorResponse
+// @Router /accounts/{account_id}/users [get]
+func (co *Controller) GetList(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	se, err := domain.RequireSession(ctx)
+	if err != nil {
+		return httpserver.NewError(http.StatusUnauthorized, err, err.Error())
+	}
+
+	pageStr := c.QueryParam("page")
+	page := 1
+	if pageStr != "" {
+		page, _ = strconv.Atoi(pageStr)
+	}
+
+	res, err := co.u.List(ctx, se, page)
+	if err != nil {
+		return httpserver.NewError(http.StatusInternalServerError, err, "could not list users")
+	}
+
+	return c.JSON(http.StatusOK, GetListResponse{
+		Users: res.Users,
+		Total: res.Total,
+	})
+}
+
+// GetListResponse ...
+type GetListResponse struct {
+	Users      []*domain.User `json:"users"`
+	Page       int            `json:"page"`
+	TotalPages int            `json:"total_pages"`
+	Total      int            `json:"total"`
 }
