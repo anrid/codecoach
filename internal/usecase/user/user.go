@@ -290,7 +290,12 @@ func (uc *UseCase) Update(ctx context.Context, accountID, id domain.ID, a domain
 }
 
 // List ...
-func (uc *UseCase) List(ctx context.Context, se *domain.Session, page int) (*domain.ListUsersResult, error) {
+func (uc *UseCase) List(ctx context.Context, page int) (*domain.ListUsersResult, error) {
+	se, err := domain.RequireSession(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	// Only admins can list all users.
 	var onlyUserID = se.User.ID
 	if se.User.Role == domain.RoleAdmin {

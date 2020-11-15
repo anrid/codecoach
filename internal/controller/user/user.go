@@ -208,18 +208,13 @@ type PatchUserRequest struct {
 func (co *Controller) GetList(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	se, err := domain.RequireSession(ctx)
-	if err != nil {
-		return httpserver.NewError(http.StatusUnauthorized, err, err.Error())
-	}
-
 	pageStr := c.QueryParam("page")
 	page := 1
 	if pageStr != "" {
 		page, _ = strconv.Atoi(pageStr)
 	}
 
-	res, err := co.u.List(ctx, se, page)
+	res, err := co.u.List(ctx, page)
 	if err != nil {
 		return httpserver.NewError(http.StatusInternalServerError, err, "could not list users")
 	}

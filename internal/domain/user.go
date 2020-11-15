@@ -113,7 +113,7 @@ type UserUseCases interface {
 	GithubGetAvailableAccounts(ctx context.Context, githubID int64) ([]*AccountInfo, error)
 	Create(ctx context.Context, a CreateUserArgs) (*User, error)
 	Update(ctx context.Context, accountID, id ID, a UpdateUserArgs) (*User, error)
-	List(ctx context.Context, se *Session, max int) (*ListUsersResult, error)
+	List(ctx context.Context, page int) (*ListUsersResult, error)
 }
 
 // SignupArgs ...
